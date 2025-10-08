@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>inSIGHTs - Facility Performance Review Dashboard</title>
+    <title>inSIGHTs - Facility Performance Dashboard</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js for data visualization -->
@@ -122,7 +122,7 @@
                 <i data-lucide="bar-chart-big" class="mx-auto text-indigo-400 mb-4" style="width: 64px; height: 64px;"></i>
                 <h1 class="text-5xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">inSIGHTs</h1>
                 <p class="mt-4 text-lg text-slate-400">Facility Performance Insights Dashboard</p>
-                <p class="mt-2 text-sm text-slate-500 max-w-md mx-auto">Upload facility snapshot CSV file to generate an interactive, visual report and uncover key metrics outliers easily.</p>
+                <p class="mt-2 text-sm text-slate-500 max-w-md mx-auto">Upload your facility performance CSV file to generate an interactive, visual report and uncover key metrics.</p>
                 
                 <div class="mt-8">
                     <label for="csv-file-input" class="file-input-button cursor-pointer inline-flex items-center gap-2 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
@@ -179,23 +179,9 @@
 
             <!-- Dashboard Content -->
             <main class="pb-24">
-                <!-- Main Content Area: Switches between KPI grid and Comparison list -->
-                <div id="main-content-area">
-                    <!-- KPI Cards Grid -->
-                    <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 mb-8">
-                        <!-- Populated in Single-Facility Mode -->
-                    </div>
-                    <!-- Comparison Mode List -->
-                    <div id="comparison-view" class="hidden">
-                         <h2 class="text-xl font-bold text-slate-300 mb-4">Comparison Mode: Click a Metric to Compare</h2>
-                         <div id="metric-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-8">
-                            <!-- Populated in Comparison Mode -->
-                         </div>
-                    </div>
-                </div>
-                <!-- Alerts Section -->
-                <div id="alert-section">
-                    <!-- Alerts will be dynamically inserted here -->
+                <!-- KPI Cards Grid -->
+                <div id="kpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-8">
+                    <!-- Populated in Single-Facility or Comparison Mode -->
                 </div>
             </main>
         </div>
@@ -281,10 +267,7 @@
         const resetButton = document.getElementById('reset-button');
         const avgRiskScoreEl = document.getElementById('avg-risk-score');
         const riskScoreLabel = document.getElementById('risk-score-label');
-        const alertSection = document.getElementById('alert-section');
         const kpiGrid = document.getElementById('kpi-grid');
-        const comparisonView = document.getElementById('comparison-view');
-        const metricList = document.getElementById('metric-list');
         const chartModal = document.getElementById('chart-modal');
         const chartModalTitle = document.getElementById('chart-modal-title');
         const modalCloseBtn = document.getElementById('modal-close-btn');
@@ -485,10 +468,9 @@
             updateHeader(currentFilteredData, isComparisonMode);
             
             if (isComparisonMode) {
-                renderComparisonView();
-                alertSection.innerHTML = '';
+                updateComparisonKPIs();
             } else {
-                renderSingleView(currentFilteredData);
+                updateSingleKPIs(currentFilteredData);
             }
         }
         
@@ -506,37 +488,8 @@
              }
         }
         
-        function renderSingleView(data) {
-            kpiGrid.classList.remove('hidden');
-            comparisonView.classList.add('hidden');
-            updateKPIs(data);
-            renderAlerts(data);
-        }
-        
-        function renderComparisonView() {
-            kpiGrid.classList.add('hidden');
-            comparisonView.classList.remove('hidden');
-            
-            metricList.innerHTML = '';
-            kpiMetrics.forEach(metric => {
-                 const iconName = metricToIconMap[metric] || metricToIconMap['default'];
-                 const itemHTML = `
-                    <div class="glass-card metric-list-item p-4 rounded-xl cursor-pointer flex flex-col items-center justify-center text-center gap-2" data-metric="${metric}">
-                        <i data-lucide="${iconName}" class="w-8 h-8 text-indigo-400"></i>
-                        <p class="text-sm font-semibold text-slate-200">${metric}</p>
-                    </div>
-                 `;
-                 metricList.innerHTML += itemHTML;
-            });
-            lucide.createIcons();
-            
-            document.querySelectorAll('.metric-list-item').forEach(item => {
-                item.addEventListener('click', (e) => showMetricChart(e.currentTarget.dataset.metric, selectedFacilities));
-            });
-        }
-
-
-        function updateKPIs(data) {
+        function updateSingleKPIs(data) {
+            kpiGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-8';
             kpiGrid.innerHTML = '';
             const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
             const sum = (arr) => arr.reduce((a, b) => a + b, 0);
@@ -574,25 +527,49 @@
                         else if (change < -0.1) { colorClass = isLowerBetter ? 'text-emerald-400' : 'text-red-400'; icon = 'arrow-down'; }
 
                         if (icon !== 'minus') {
-                           trendHTML = `<span class="text-xs font-bold flex items-center ${colorClass} ml-2"><i data-lucide="${icon}" class="w-3 h-3"></i>${Math.abs(change).toFixed(1)}%</span>`;
+                           trendHTML = `<span class="text-xs font-bold flex items-center ${colorClass}"><i data-lucide="${icon}" class="w-3 h-3"></i>${Math.abs(change).toFixed(1)}%</span>`;
                         }
                     }
                 }
 
+                // Outlier calculation for card alert
+                let alertHTML = '';
+                const outliers = calculateOutliers(data, metric);
+                const isLowerBetter = lowerIsBetterMetrics.includes(metric);
+                const badOutliers = outliers.filter(outlier => {
+                    const stats = calculateStats(data.map(d => d[metric]));
+                    if (!stats) return false;
+                    return (isLowerBetter && outlier.value > stats.upperBound) || (!isLowerBetter && outlier.value < stats.lowerBound);
+                });
+
+                if (badOutliers.length > 0) {
+                    const mostRecentOutlier = badOutliers.sort((a, b) => b.Date - a.Date)[0];
+                    const formattedDate = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' }).format(mostRecentOutlier.Date);
+                    alertHTML = `
+                        <div class="mt-2 pt-2 border-t border-slate-700/50 flex items-center text-xs text-amber-400">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 mr-1.5 flex-shrink-0"></i>
+                            <span>High alert on ${formattedDate}</span>
+                        </div>`;
+                }
+
+
                 const card = document.createElement('div');
-                card.className = "glass-card kpi-card p-3 rounded-xl cursor-pointer flex items-center gap-3";
+                card.className = "glass-card kpi-card p-4 rounded-xl cursor-pointer flex flex-col justify-between min-h-[120px]";
                 card.dataset.metric = metric;
                 card.innerHTML = `
-                    <div class="p-2 bg-slate-900/50 rounded-lg">
-                       <i data-lucide="${iconName}" class="w-6 h-6 text-indigo-400"></i>
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <p class="text-xs text-slate-400 truncate">${metric} <span class="text-slate-500">${valueType}</span></p>
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 bg-slate-900/50 rounded-lg">
+                               <i data-lucide="${iconName}" class="w-5 h-5 text-indigo-400"></i>
+                            </div>
+                            <p class="text-sm text-slate-400 truncate">${metric} <span class="text-slate-500">${valueType}</span></p>
+                        </div>
                         <div class="flex items-baseline">
-                            <h3 class="text-lg font-bold text-slate-100">${displayValue}</h3>
+                            <h3 class="text-2xl font-bold text-slate-100">${displayValue}</h3>
                             ${trendHTML}
                         </div>
-                    </div>`;
+                    </div>
+                    ${alertHTML}`;
                 
                 card.addEventListener('click', (e) => showMetricChart(e.currentTarget.dataset.metric, selectedFacilities));
                 kpiGrid.appendChild(card);
@@ -600,6 +577,71 @@
 
             lucide.createIcons();
         }
+
+        function updateComparisonKPIs() {
+            kpiGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8';
+            kpiGrid.innerHTML = '';
+
+            kpiMetrics.forEach(metric => {
+                const isPercentage = metric.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metric);
+                const formatValue = (val) => val.toFixed(2) + (isPercentage ? '%' : '');
+
+                const facilityStats = selectedFacilities.map(facility => {
+                    const data = currentFilteredData.filter(d => d.Facility === facility);
+                    const values = data.map(d => d[metric]).filter(v => v != null && !isNaN(v));
+                    if (values.length === 0) return { facility, avg: NaN, range: NaN };
+                    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+                    return { facility, avg, range: max - min };
+                }).filter(s => !isNaN(s.avg));
+
+                if (facilityStats.length < 2) return;
+
+                const isLowerBetter = lowerIsBetterMetrics.includes(metric);
+                
+                facilityStats.sort((a, b) => isLowerBetter ? a.avg - b.avg : b.avg - a.avg);
+                const bestPerformer = facilityStats[0];
+                const worstPerformer = facilityStats[facilityStats.length - 1];
+
+                facilityStats.sort((a, b) => b.range - a.range);
+                const mostVolatile = facilityStats[0];
+                
+                const iconName = metricToIconMap[metric] || 'default';
+
+                const card = document.createElement('div');
+                card.className = "glass-card kpi-card p-4 rounded-xl cursor-pointer flex flex-col justify-between";
+                card.dataset.metric = metric;
+                card.innerHTML = `
+                     <div>
+                        <div class="flex items-center gap-3 mb-3">
+                             <div class="p-2 bg-slate-900/50 rounded-lg">
+                               <i data-lucide="${iconName}" class="w-5 h-5 text-indigo-400"></i>
+                            </div>
+                            <p class="text-base font-semibold text-slate-200 truncate">${metric}</p>
+                        </div>
+                        <dl class="text-xs space-y-2">
+                            <div class="flex justify-between items-center gap-2">
+                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>Best</dt>
+                                <dd class="font-semibold text-slate-100 truncate text-right">${bestPerformer.facility} (${formatValue(bestPerformer.avg)})</dd>
+                            </div>
+                            <div class="flex justify-between items-center gap-2">
+                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1.5 text-red-400"></i>Worst</dt>
+                                <dd class="font-semibold text-slate-100 truncate text-right">${worstPerformer.facility} (${formatValue(worstPerformer.avg)})</dd>
+                            </div>
+                             <div class="flex justify-between items-center gap-2">
+                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="zap" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>Volatile</dt>
+                                <dd class="font-semibold text-slate-100 truncate text-right">${mostVolatile.facility}</dd>
+                            </div>
+                        </dl>
+                    </div>`;
+
+                card.addEventListener('click', (e) => showMetricChart(e.currentTarget.dataset.metric, selectedFacilities));
+                kpiGrid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
 
         // --- Insight & Alert Calculation ---
         function calculateTrendInsights(metricName, facilities) {
@@ -705,88 +747,31 @@
              return { summary: summaryHTML, detailed: detailedHTML };
         }
 
-        function calculateOutliers(data, metricName) {
-            const values = data.map(d => d[metricName]).filter(v => typeof v === 'number' && !isNaN(v)).sort((a, b) => a - b);
-            if (values.length < 4) return []; // Not enough data for IQR
+        function calculateStats(values) {
+            const sortedValues = values.filter(v => typeof v === 'number' && !isNaN(v)).sort((a, b) => a - b);
+            if (sortedValues.length < 4) return null;
 
-            const q1 = values[Math.floor(values.length / 4)];
-            const q3 = values[Math.ceil(values.length * (3 / 4))];
+            const q1 = sortedValues[Math.floor(sortedValues.length / 4)];
+            const q3 = sortedValues[Math.ceil(sortedValues.length * (3 / 4))];
             const iqr = q3 - q1;
-            const maxValue = q3 + iqr * 1.5;
-            const minValue = q1 - iqr * 1.5;
+            
+            return {
+                q1,
+                q3,
+                iqr,
+                upperBound: q3 + iqr * 1.5,
+                lowerBound: q1 - iqr * 1.5
+            };
+        }
+        
+        function calculateOutliers(data, metricName) {
+            const stats = calculateStats(data.map(d => d[metricName]));
+            if (!stats) return [];
 
             return data.filter(d => {
                 const value = d[metricName];
-                return typeof value === 'number' && (value > maxValue || value < minValue);
+                return typeof value === 'number' && (value > stats.upperBound || value < stats.lowerBound);
             }).map(d => ({ ...d, value: d[metricName] }));
-        }
-
-        function renderAlerts(data) {
-            alertSection.innerHTML = '';
-            let allOutliers = [];
-            
-            const formatDateSimple = (date) => {
-                if (!date || isNaN(date)) return '';
-                return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long' }).format(date);
-            };
-
-            kpiMetrics.forEach(metric => {
-                const outliers = calculateOutliers(data, metric);
-                const isLowerBetter = lowerIsBetterMetrics.includes(metric);
-                
-                outliers.forEach(outlier => {
-                    const values = data.map(d => d[metric]).filter(v => typeof v === 'number' && !isNaN(v)).sort((a, b) => a - b);
-                    const q1 = values[Math.floor(values.length / 4)];
-                    const q3 = values[Math.ceil(values.length * (3 / 4))];
-                    const iqr = q3 - q1;
-                    
-                    const isBad = (isLowerBetter && outlier.value > (q3 + iqr * 1.5)) || (!isLowerBetter && outlier.value < (q1 - iqr * 1.5));
-                    if (isBad) {
-                         allOutliers.push({
-                            metric,
-                            value: outlier.value,
-                            date: outlier.Date,
-                            isLowerBetter,
-                        });
-                    }
-                });
-            });
-
-            if(allOutliers.length > 0) {
-                 alertSection.innerHTML = `
-                 <div class="glass-card p-4 rounded-lg">
-                    <h3 class="flex items-center gap-2 font-semibold text-slate-100 mb-3">
-                        <i data-lucide="bell-ring" class="text-amber-400"></i>
-                        Key Performance Alerts
-                    </h3>
-                    <ul class="space-y-2 text-sm max-h-32 overflow-y-auto">
-                        ${allOutliers.map(alert => {
-                             const isPercentage = alert.metric.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(alert.metric);
-                             const formattedValue = alert.value.toFixed(2) + (isPercentage ? '%' : '');
-                             return `
-                                <li class="flex items-start gap-3 p-2 rounded-md hover:bg-slate-800/50">
-                                    <i data-lucide="alert-triangle" class="text-red-400 mt-1 flex-shrink-0"></i>
-                                    <div>
-                                        <span class="font-semibold text-slate-200">${alert.metric}</span> hit an unusual ${alert.isLowerBetter ? 'high' : 'low'} of <strong class="text-white">${formattedValue}</strong> on <span class="font-semibold">${formatDateSimple(alert.date)}</span>.
-                                    </div>
-                                </li>`
-                        }).join('')}
-                    </ul>
-                </div>`;
-            } else {
-                alertSection.innerHTML = `
-                <div class="glass-card p-4 rounded-lg">
-                    <h3 class="flex items-center gap-2 font-semibold text-slate-100 mb-3">
-                        <i data-lucide="bell" class="text-slate-400"></i>
-                        Key Performance Alerts
-                    </h3>
-                    <div class="flex items-center gap-3 p-2 text-sm text-slate-400">
-                        <i data-lucide="check-circle" class="text-emerald-400"></i>
-                        <span>No significant outliers detected in the selected period.</span>
-                    </div>
-                </div>`;
-            }
-             lucide.createIcons();
         }
 
 
