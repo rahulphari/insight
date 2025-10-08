@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>inSIGHTs - Facility Performance Review Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.395.0/dist/umd/lucide.min.js"></script>
+
+    <style>
+        /* Custom scrollbar for a modern look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #475569;
+            border-radius: 10px;
+            border: 2px solid #1e293b;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #64748b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        /* Style for file input button */
+        .file-input-button {
+            background: linear-gradient(to right, #4f46e5, #818cf8);
+        }
+        .file-input-button:hover {
+            background: linear-gradient(to right, #4338ca, #6366f1);
+        }
+        /* Glassmorphism effect for cards */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .kpi-card, .metric-list-item {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .kpi-card:hover, .metric-list-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2), 0 4px 6px -2px rgba(79, 70, 229, 0.1);
+        }
+        /* Custom checkbox style */
+        .custom-checkbox {
+            appearance: none;
+            background-color: #334155;
+            border: 1px solid #475569;
+            padding: 10px;
+            border-radius: 6px;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-checkbox:checked {
+            background-color: #4f46e5;
+            border-color: #6366f1;
+        }
+        .custom-checkbox:checked::after {
+            content: '\2713';
+            font-size: 14px;
+            position: absolute;
+            color: white;
+            top: 0px;
+            left: 4px;
+        }
+        /* Pivot table styling */
+        .pivot-table th, .pivot-table td {
+            white-space: nowrap;
+            padding: 8px 12px;
+            text-align: right;
+            border-right: 1px solid #334155;
+        }
+        .pivot-table th:last-child, .pivot-table td:last-child {
+            border-right: none;
+        }
+        .pivot-table th:first-child, .pivot-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            left: 0;
+            background-color: #1e293b;
+            z-index: 10;
+        }
+         .pivot-table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #1e293b;
+            z-index: 20;
+        }
+        .pivot-table tbody tr:nth-child(even) {
+            background-color: rgba(30, 41, 59, 0.7);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Main Container -->
+    <div id="app" class="min-h-screen p-4 sm:p-6 lg:p-8 transition-all duration-500">
+        
+        <!-- Upload View -->
+        <div id="upload-view" class="flex flex-col items-center justify-center min-h-[80vh]">
+            <div class="text-center">
+                <i data-lucide="bar-chart-big" class="mx-auto text-indigo-400 mb-4" style="width: 64px; height: 64px;"></i>
+                <h1 class="text-5xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">inSIGHTs</h1>
+                <p class="mt-4 text-lg text-slate-400">Facility Performance Insights Dashboard</p>
+                <p class="mt-2 text-sm text-slate-500 max-w-md mx-auto">Upload facility snapshot CSV file to generate an interactive, visual report and uncover key metrics outliers easily.</p>
+                
+                <div class="mt-8">
+                    <label for="csv-file-input" class="file-input-button cursor-pointer inline-flex items-center gap-2 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+                        <i data-lucide="upload-cloud"></i>
+                        Upload CSV File
+                    </label>
+                    <input type="file" id="csv-file-input" class="hidden" accept=".csv">
+                </div>
+                <p id="upload-error" class="text-red-400 mt-4 text-sm"></p>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden">
+            <!-- Header -->
+            <header class="mb-8">
+                <div class="flex flex-wrap items-start justify-between gap-6">
+                    <!-- Left Side: Title & Facility Selector -->
+                    <div class="flex-1 min-w-[300px]">
+                        <div class="flex items-center gap-3 mb-4">
+                            <i data-lucide="bar-chart-big" class="text-indigo-400" style="width: 32px; height: 32px;"></i>
+                             <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">inSIGHTs</h1>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-slate-400 mb-1 block">Selected Facility</label>
+                            <button id="open-facility-modal-btn" class="w-full bg-slate-900/50 border border-slate-700 text-white text-2xl font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-3 text-left truncate">
+                                <!-- Populated by JS -->
+                            </button>
+                        </div>
+                    </div>
+            
+                    <!-- Right Side: Risk Score & Filters -->
+                    <div class="flex-1 flex flex-col items-end gap-4 min-w-[300px] sm:items-end items-stretch">
+                         <!-- Risk Score Card -->
+                         <div id="risk-score-card" class="glass-card p-4 rounded-xl w-full max-w-sm text-right">
+                             <p class="text-sm text-slate-400 flex items-center justify-end gap-2">
+                                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                                <span id="risk-score-label">Average Risk Score</span>
+                            </p>
+                             <h3 id="avg-risk-score" class="text-4xl font-bold text-slate-100">0.00</h3>
+                         </div>
+                         <!-- Filters -->
+                         <div class="flex flex-wrap items-center gap-2 justify-end">
+                            <input type="date" id="date-start" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2 w-full sm:w-auto">
+                            <span class="text-slate-500">to</span>
+                            <input type="date" id="date-end" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2 w-full sm:w-auto">
+                            <button id="reset-button" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
+                                <i data-lucide="rotate-cw" class="w-4 h-4"></i> Reset
+                            </button>
+                         </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <main class="pb-24">
+                <!-- Main Content Area: Switches between KPI grid and Comparison list -->
+                <div id="main-content-area">
+                    <!-- KPI Cards Grid -->
+                    <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 mb-8">
+                        <!-- Populated in Single-Facility Mode -->
+                    </div>
+                    <!-- Comparison Mode List -->
+                    <div id="comparison-view" class="hidden">
+                         <h2 class="text-xl font-bold text-slate-300 mb-4">Comparison Mode: Click a Metric to Compare</h2>
+                         <div id="metric-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-8">
+                            <!-- Populated in Comparison Mode -->
+                         </div>
+                    </div>
+                </div>
+                <!-- Alerts Section -->
+                <div id="alert-section">
+                    <!-- Alerts will be dynamically inserted here -->
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Floating Action Button for Detailed Data -->
+    <button id="open-data-table-modal-btn" class="hidden fixed bottom-6 left-6 file-input-button text-white font-semibold py-3 px-4 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300 z-40 flex items-center gap-2">
+        <i data-lucide="table-2"></i>
+        <span class="hidden sm:inline">Show Detailed Data</span>
+    </button>
+
+
+    <!-- Modals -->
+
+    <!-- Chart Modal -->
+    <div id="chart-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
+        <div class="glass-card rounded-xl w-full max-w-4xl max-h-[90vh] p-6 flex flex-col transform transition-transform duration-300 scale-95">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="chart-modal-title" class="text-xl font-bold text-slate-100">Metric Trend</h3>
+                <button id="modal-close-btn" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="relative flex-grow min-h-[300px]">
+                 <canvas id="modal-chart-canvas"></canvas>
+            </div>
+            <div id="chart-insight-area" class="mt-4 pt-4 border-t border-slate-700">
+                <!-- Insight will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Facility Selector Modal -->
+    <div id="facility-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
+        <div class="glass-card rounded-xl w-full max-w-md max-h-[80vh] p-6 flex flex-col transform transition-transform duration-300 scale-95">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-slate-100">Select Facilities</h3>
+                <button id="facility-modal-close-btn" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div id="facility-list-container" class="flex-grow overflow-y-auto -mr-2 pr-2 space-y-2">
+                <!-- Facility items will be populated by JS -->
+            </div>
+            <div class="mt-6 text-right">
+                <button id="apply-facility-selection-btn" class="file-input-button text-white font-semibold py-2 px-6 rounded-lg">Apply</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed Data Table Modal -->
+    <div id="data-table-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
+        <div class="glass-card rounded-xl w-full max-w-7xl h-[90vh] p-6 flex flex-col transform transition-transform duration-300 scale-95">
+            <div class="flex items-center justify-between mb-4 flex-shrink-0">
+                <div>
+                     <h3 class="text-xl font-bold text-slate-100">Detailed Daily Data</h3>
+                     <p id="data-table-modal-subtitle" class="text-sm text-slate-400"></p>
+                </div>
+                <div id="data-table-facility-selector-container" class="hidden">
+                    <select id="data-table-facility-selector" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"></select>
+                </div>
+                <button id="data-table-modal-close-btn" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div id="pivot-table-container" class="flex-grow overflow-auto">
+                <!-- Pivot table will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+    window.addEventListener('load', () => {
+        // DOM Elements
+        const uploadView = document.getElementById('upload-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const fileInput = document.getElementById('csv-file-input');
+        const uploadError = document.getElementById('upload-error');
+        const openFacilityModalBtn = document.getElementById('open-facility-modal-btn');
+        const dateStartFilter = document.getElementById('date-start');
+        const dateEndFilter = document.getElementById('date-end');
+        const resetButton = document.getElementById('reset-button');
+        const avgRiskScoreEl = document.getElementById('avg-risk-score');
+        const riskScoreLabel = document.getElementById('risk-score-label');
+        const alertSection = document.getElementById('alert-section');
+        const kpiGrid = document.getElementById('kpi-grid');
+        const comparisonView = document.getElementById('comparison-view');
+        const metricList = document.getElementById('metric-list');
+        const chartModal = document.getElementById('chart-modal');
+        const chartModalTitle = document.getElementById('chart-modal-title');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalChartCanvas = document.getElementById('modal-chart-canvas');
+        const chartInsightArea = document.getElementById('chart-insight-area');
+        const facilityModal = document.getElementById('facility-modal');
+        const facilityModalCloseBtn = document.getElementById('facility-modal-close-btn');
+        const applyFacilitySelectionBtn = document.getElementById('apply-facility-selection-btn');
+        const facilityListContainer = document.getElementById('facility-list-container');
+        const openDataTableModalBtn = document.getElementById('open-data-table-modal-btn');
+        const dataTableModal = document.getElementById('data-table-modal');
+        const dataTableModalCloseBtn = document.getElementById('data-table-modal-close-btn');
+        const dataTableFacilitySelectorContainer = document.getElementById('data-table-facility-selector-container');
+        const dataTableFacilitySelector = document.getElementById('data-table-facility-selector');
+        const pivotTableContainer = document.getElementById('pivot-table-container');
+
+        // Global state
+        let fullData = [];
+        let currentFilteredData = [];
+        let modalChart = null;
+        let sortedFacilities = [];
+        let selectedFacilities = [];
+
+        const kpiMetrics = [
+            'RiskScore', '5AM Fail%', 'OBSL', 'PUT%', 'P1 Comp% PickList', 
+            'MixBag Fail%', 'FIFO Fail%', 'EOS Fail%', 'Short Sent', 'B2B Ageing',
+            'P1 -CC Not Conn%', 'P1 Floor Not Conn%',
+            'Air FIFO%', 'Pur Pick%', 'Reg Roster', 'Adhoc Roster%'
+        ];
+        
+        const metricToIconMap = {
+            'RiskScore': 'shield-alert', '5AM Fail%': 'clock-5', 'OBSL': 'truck', 'PUT%': 'package-check', 'P1 Comp% PickList': 'clipboard-list',
+            'MixBag Fail%': 'shopping-bag', 'FIFO Fail%': 'arrow-right-left', 'EOS Fail%': 'battery-charging',
+            'Short Sent': 'package-minus', 'B2B Ageing': 'calendar-clock', 'P1 -CC Not Conn%': 'plug-zap',
+            'P1 Floor Not Conn%': 'workflow', 'Air FIFO%': 'plane', 'Pur Pick%': 'user-check',
+            'Reg Roster': 'users', 'Adhoc Roster%': 'user-plus', 'default': 'bar-chart-3'
+        };
+        
+        const lowerIsBetterMetrics = ['RiskScore', '5AM Fail%', 'MixBag Fail%', 'FIFO Fail%', 'EOS Fail%', 'P1 -CC Not Conn%', 'P1 Floor Not Conn%', 'Short Sent', 'B2B Ageing'];
+
+        const comparisonColors = ['#818cf8', '#34d399', '#fb923c', '#60a5fa', '#f87171', '#a78bfa', '#fbbf24', '#4ade80'];
+
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        lucide.createIcons();
+
+        // --- Event Listeners ---
+        fileInput.addEventListener('change', handleFileUpload);
+        dateStartFilter.addEventListener('change', updateDashboard);
+        dateEndFilter.addEventListener('change', updateDashboard);
+        resetButton.addEventListener('click', resetFilters);
+        // Chart Modal listeners
+        modalCloseBtn.addEventListener('click', hideChartModal);
+        chartModal.addEventListener('click', (e) => { if (e.target === chartModal) hideChartModal(); });
+        // Facility Modal listeners
+        openFacilityModalBtn.addEventListener('click', showFacilityModal);
+        facilityModalCloseBtn.addEventListener('click', hideFacilityModal);
+        facilityModal.addEventListener('click', (e) => { if (e.target === facilityModal) hideFacilityModal(); });
+        applyFacilitySelectionBtn.addEventListener('click', () => {
+            const checkedBoxes = facilityListContainer.querySelectorAll('input[type="checkbox"]:checked');
+            selectedFacilities = Array.from(checkedBoxes).map(cb => cb.value);
+            if (selectedFacilities.length === 0) {
+                // Prevent de-selecting all, fallback to first
+                selectedFacilities.push(sortedFacilities[0].name);
+            }
+            hideFacilityModal();
+            updateDashboard();
+        });
+        // Data Table Modal Listeners
+        openDataTableModalBtn.addEventListener('click', showDataTableModal);
+        dataTableModalCloseBtn.addEventListener('click', hideDataTableModal);
+        dataTableModal.addEventListener('click', (e) => { if (e.target === dataTableModal) hideDataTableModal(); });
+        dataTableFacilitySelector.addEventListener('change', (e) => renderPivotTable(e.target.value));
+
+        // --- Main Functions ---
+
+        /**
+         * Parses a date string from various common formats.
+         * @param {string} dateString The date string to parse.
+         * @returns {Date|null} A Date object or null if parsing fails.
+         */
+        function parseDate(dateString) {
+            if (!dateString || typeof dateString !== 'string') return null;
+            
+            // Attempt to parse with JS native parser first (handles ISO, YYYY-MM-DD, MM/DD/YYYY)
+            let date = new Date(dateString);
+            if (!isNaN(date)) return date;
+
+            // Handle formats like DD-MM-YYYY or DD/MM/YYYY
+            const parts = dateString.split(/[\/\-]/);
+            if (parts.length === 3) {
+                const [day, month, year] = parts.map(p => parseInt(p, 10));
+                if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                    // Assuming DD-MM-YYYY
+                    date = new Date(year, month - 1, day);
+                    if (!isNaN(date)) return date;
+                }
+            }
+            
+            return null; // Return null if all parsing attempts fail
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) { uploadError.textContent = 'No file selected.'; return; }
+            if (!file.name.endsWith('.csv')) { uploadError.textContent = 'Please upload a valid .csv file.'; return; }
+            uploadError.textContent = '';
+
+            Papa.parse(file, {
+                header: true, skipEmptyLines: true, dynamicTyping: true,
+                complete: (results) => {
+                    try {
+                        fullData = processData(results.data);
+                        if(fullData.length === 0) { uploadError.textContent = 'CSV file is empty or contains invalid date formats.'; return; }
+                        setupDashboard();
+                        uploadView.classList.add('opacity-0', 'pointer-events-none');
+                        setTimeout(() => {
+                           uploadView.classList.add('hidden');
+                           dashboardView.classList.remove('hidden');
+                           openDataTableModalBtn.classList.remove('hidden');
+                           lucide.createIcons();
+                        }, 500);
+                    } catch (error) { console.error('Error processing data:', error); uploadError.textContent = 'Error processing CSV.'; }
+                },
+                error: (error) => { console.error('PapaParse error:', error); uploadError.textContent = 'Failed to parse CSV file.';}
+            });
+        }
+        
+        function processData(data) {
+            return data.map(row => {
+                const processedRow = {};
+                for (const key in row) {
+                    const cleanKey = key.trim().replace(/\s+/g, ' ');
+                    processedRow[cleanKey] = row[key];
+                }
+                
+                // Parse date robustly
+                processedRow.Date = parseDate(processedRow.Date);
+
+                const percentCols = ['5AM Fail%', 'OBSL', 'OBSL FTL', 'OBSL Carting', 'MixBag Fail%', 'PUT%', 'P1 Comp% PickList', 'P1 -CC Not Conn%', 'P1 Floor Not Conn%', 'FIFO Fail%', 'EOS Fail%', 'Air FIFO%', 'Pur Pick%', 'Reg Roster', 'Adhoc Roster%'];
+                percentCols.forEach(col => {
+                    if (processedRow[col] != null && typeof processedRow[col] === 'number') {
+                       processedRow[col] = processedRow[col] * 100;
+                    }
+                });
+                return processedRow;
+            }).filter(row => row.Date instanceof Date && !isNaN(row.Date) && row.Facility);
+        }
+
+        function setupDashboard() {
+            // Calculate avg risk scores and sort facilities
+            const facilities = [...new Set(fullData.map(d => d.Facility))];
+            const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+            sortedFacilities = facilities.map(name => {
+                const facilityData = fullData.filter(d => d.Facility === name);
+                const riskScores = facilityData.map(d => d.RiskScore).filter(v => v != null && !isNaN(v));
+                return { name, avgRisk: avg(riskScores) };
+            }).sort((a, b) => b.avgRisk - a.avgRisk);
+            
+            // Set initial selection
+            if(sortedFacilities.length > 0) {
+                selectedFacilities = [sortedFacilities[0].name];
+            }
+            
+            populateFacilityModal();
+            
+            const dates = fullData.map(d => d.Date).sort((a,b) => a - b);
+            const minDate = dates[0]?.toISOString().split('T')[0];
+            const maxDate = dates[dates.length-1]?.toISOString().split('T')[0];
+            dateStartFilter.value = minDate; dateStartFilter.min = minDate; dateStartFilter.max = maxDate;
+            dateEndFilter.value = maxDate; dateEndFilter.min = minDate; dateEndFilter.max = maxDate;
+            
+            updateDashboard();
+        }
+
+        function resetFilters() {
+            if (sortedFacilities.length > 0) { selectedFacilities = [sortedFacilities[0].name]; }
+            const dates = fullData.map(d => d.Date).sort((a,b) => a - b);
+            dateStartFilter.value = dates[0]?.toISOString().split('T')[0];
+            dateEndFilter.value = dates[dates.length-1]?.toISOString().split('T')[0];
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const startDate = new Date(dateStartFilter.value);
+            const endDate = new Date(dateEndFilter.value);
+            endDate.setHours(23, 59, 59, 999);
+
+            currentFilteredData = fullData.filter(d => {
+                const itemDate = d.Date; // Date is already a Date object
+                return selectedFacilities.includes(d.Facility) && itemDate >= startDate && itemDate <= endDate;
+            });
+            
+            const isComparisonMode = selectedFacilities.length > 1;
+            
+            updateHeader(currentFilteredData, isComparisonMode);
+            
+            if (isComparisonMode) {
+                renderComparisonView();
+                alertSection.innerHTML = '';
+            } else {
+                renderSingleView(currentFilteredData);
+            }
+        }
+        
+        function updateHeader(data, isComparisonMode) {
+             const riskScores = data.map(d => d['RiskScore']).filter(v => v != null && !isNaN(v));
+             const avgRisk = riskScores.length ? riskScores.reduce((a, b) => a + b, 0) / riskScores.length : 0;
+             avgRiskScoreEl.textContent = avgRisk.toFixed(2);
+             
+             if (isComparisonMode) {
+                 openFacilityModalBtn.textContent = `${selectedFacilities.length} Facilities Selected`;
+                 riskScoreLabel.textContent = "Combined Avg. Risk Score";
+             } else {
+                 openFacilityModalBtn.textContent = selectedFacilities[0] || "No Selection";
+                 riskScoreLabel.textContent = "Average Risk Score";
+             }
+        }
+        
+        function renderSingleView(data) {
+            kpiGrid.classList.remove('hidden');
+            comparisonView.classList.add('hidden');
+            updateKPIs(data);
+            renderAlerts(data);
+        }
+        
+        function renderComparisonView() {
+            kpiGrid.classList.add('hidden');
+            comparisonView.classList.remove('hidden');
+            
+            metricList.innerHTML = '';
+            kpiMetrics.forEach(metric => {
+                 const iconName = metricToIconMap[metric] || metricToIconMap['default'];
+                 const itemHTML = `
+                    <div class="glass-card metric-list-item p-4 rounded-xl cursor-pointer flex flex-col items-center justify-center text-center gap-2" data-metric="${metric}">
+                        <i data-lucide="${iconName}" class="w-8 h-8 text-indigo-400"></i>
+                        <p class="text-sm font-semibold text-slate-200">${metric}</p>
+                    </div>
+                 `;
+                 metricList.innerHTML += itemHTML;
+            });
+            lucide.createIcons();
+            
+            document.querySelectorAll('.metric-list-item').forEach(item => {
+                item.addEventListener('click', (e) => showMetricChart(e.currentTarget.dataset.metric, selectedFacilities));
+            });
+        }
+
+
+        function updateKPIs(data) {
+            kpiGrid.innerHTML = '';
+            const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+            const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+
+            const metricsToShow = ['RiskScore', ...kpiMetrics.filter(m => m !== 'RiskScore')];
+
+            metricsToShow.forEach(metric => {
+                const values = data.map(d => d[metric]).filter(v => v != null && !isNaN(v));
+                if (values.length === 0) return;
+
+                let displayValue, valueType;
+                let isPercentage = metric.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metric);
+                
+                if (['Short Sent', 'B2B Ageing'].includes(metric)) { 
+                    displayValue = sum(values).toLocaleString();
+                    valueType = 'total';
+                } else { 
+                    displayValue = avg(values).toFixed(2) + (isPercentage ? '%' : '');
+                    valueType = 'avg.';
+                }
+                
+                const iconName = metricToIconMap[metric] || metricToIconMap['default'];
+                
+                let trendHTML = '';
+                if (data.length > 1) {
+                    const startValue = data[0][metric];
+                    const endValue = data[data.length - 1][metric];
+                    
+                    if (startValue != null && endValue != null && startValue !== 0) {
+                        const change = ((endValue - startValue) / Math.abs(startValue)) * 100;
+                        const isLowerBetter = lowerIsBetterMetrics.includes(metric);
+                        
+                        let colorClass = 'text-slate-500'; let icon = 'minus';
+                        if (change > 0.1) { colorClass = isLowerBetter ? 'text-red-400' : 'text-emerald-400'; icon = 'arrow-up'; } 
+                        else if (change < -0.1) { colorClass = isLowerBetter ? 'text-emerald-400' : 'text-red-400'; icon = 'arrow-down'; }
+
+                        if (icon !== 'minus') {
+                           trendHTML = `<span class="text-xs font-bold flex items-center ${colorClass} ml-2"><i data-lucide="${icon}" class="w-3 h-3"></i>${Math.abs(change).toFixed(1)}%</span>`;
+                        }
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.className = "glass-card kpi-card p-3 rounded-xl cursor-pointer flex items-center gap-3";
+                card.dataset.metric = metric;
+                card.innerHTML = `
+                    <div class="p-2 bg-slate-900/50 rounded-lg">
+                       <i data-lucide="${iconName}" class="w-6 h-6 text-indigo-400"></i>
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-xs text-slate-400 truncate">${metric} <span class="text-slate-500">${valueType}</span></p>
+                        <div class="flex items-baseline">
+                            <h3 class="text-lg font-bold text-slate-100">${displayValue}</h3>
+                            ${trendHTML}
+                        </div>
+                    </div>`;
+                
+                card.addEventListener('click', (e) => showMetricChart(e.currentTarget.dataset.metric, selectedFacilities));
+                kpiGrid.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        // --- Insight & Alert Calculation ---
+        function calculateTrendInsights(metricName, facilities) {
+            const isComparison = facilities.length > 1;
+            const isPercentage = metricName.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metricName);
+            const formatDateSimple = (date) => {
+                if (!date || isNaN(date)) return '';
+                return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long' }).format(date);
+            };
+            const formatValue = (val) => val.toFixed(2) + (isPercentage ? '%' : '');
+            
+            if(isComparison) {
+                const results = facilities.map(facility => {
+                    const data = currentFilteredData.filter(d => d.Facility === facility);
+                    const values = data.map(d => d[metricName]).filter(v => v != null && !isNaN(v));
+                    if (values.length === 0) return { facility, avg: NaN, range: NaN };
+                    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+                    return { facility, avg, range: max - min };
+                }).filter(r => !isNaN(r.avg));
+
+                if (results.length === 0) return { isComparison: true, error: "No data for comparison." };
+
+                const isLowerBetter = lowerIsBetterMetrics.includes(metricName);
+                results.sort((a, b) => isLowerBetter ? a.avg - b.avg : b.avg - a.avg);
+                const bestPerformer = results[0];
+                results.sort((a, b) => b.range - a.range);
+                const mostVolatile = results[0];
+
+                return { isComparison: true, bestPerformer, mostVolatile, allFacilities: results, formatValue };
+
+            } else {
+                 const data = currentFilteredData;
+                 const values = data.map(d => d[metricName]).filter(v => v != null && !isNaN(v));
+                 if (values.length < 2) return { isComparison: false, error: "Not enough data for analysis." };
+                 
+                 const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                 const min = Math.min(...values);
+                 const max = Math.max(...values);
+                 const minDate = data.find(d => d[metricName] === min)?.Date;
+                 const maxDate = data.find(d => d[metricName] === max)?.Date;
+                 const startVal = values[0];
+                 const endVal = values[values.length - 1];
+                 const change = startVal !== 0 ? ((endVal - startVal) / Math.abs(startVal)) * 100 : 0;
+
+                 return { isComparison: false, avg, min, max, minDate: formatDateSimple(minDate), maxDate: formatDateSimple(maxDate), startVal, endVal, change, formatValue };
+            }
+        }
+
+        function formatInsightsHTML(insights) {
+             let summaryHTML, detailedHTML;
+
+             if(insights.error) {
+                 return { summary: `<p class="text-slate-400">${insights.error}</p>`, detailed: '' };
+             }
+
+             if(insights.isComparison) {
+                 summaryHTML = `
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-slate-400 font-semibold">Best Performer (Avg)</p>
+                            <p class="text-slate-100 text-lg font-bold">${insights.bestPerformer.facility}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 font-semibold">Most Volatile (Range)</p>
+                            <p class="text-slate-100 text-lg font-bold">${insights.mostVolatile.facility}</p>
+                        </div>
+                    </div>
+                 `;
+                 detailedHTML = `
+                    <dl class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                        ${insights.allFacilities.map(f => `
+                            <dt class="text-slate-400 col-span-2">${f.facility} Avg:</dt>
+                            <dd class="text-slate-200 font-semibold text-right">${!isNaN(f.avg) ? insights.formatValue(f.avg) : 'N/A'}</dd>
+                        `).join('')}
+                    </dl>
+                 `;
+             } else {
+                 summaryHTML = `
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                         <div>
+                            <p class="text-slate-400 font-semibold">Average Value</p>
+                            <p class="text-slate-100 text-lg font-bold">${insights.formatValue(insights.avg)}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 font-semibold">Overall Change</p>
+                            <p class="text-lg font-bold ${insights.change >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                                ${insights.change >= 0 ? '+' : ''}${insights.change.toFixed(2)}%
+                            </p>
+                        </div>
+                    </div>
+                 `;
+                 detailedHTML = `
+                    <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <dt class="text-slate-400">Start Value:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.startVal)}</dd>
+                        <dt class="text-slate-400">End Value:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.endVal)}</dd>
+                        <dt class="text-slate-400">Highest Point:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.max)} on ${insights.maxDate}</dd>
+                        <dt class="text-slate-400">Lowest Point:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.min)} on ${insights.minDate}</dd>
+                    </dl>
+                 `;
+             }
+             return { summary: summaryHTML, detailed: detailedHTML };
+        }
+
+        function calculateOutliers(data, metricName) {
+            const values = data.map(d => d[metricName]).filter(v => typeof v === 'number' && !isNaN(v)).sort((a, b) => a - b);
+            if (values.length < 4) return []; // Not enough data for IQR
+
+            const q1 = values[Math.floor(values.length / 4)];
+            const q3 = values[Math.ceil(values.length * (3 / 4))];
+            const iqr = q3 - q1;
+            const maxValue = q3 + iqr * 1.5;
+            const minValue = q1 - iqr * 1.5;
+
+            return data.filter(d => {
+                const value = d[metricName];
+                return typeof value === 'number' && (value > maxValue || value < minValue);
+            }).map(d => ({ ...d, value: d[metricName] }));
+        }
+
+        function renderAlerts(data) {
+            alertSection.innerHTML = '';
+            let allOutliers = [];
+            
+            const formatDateSimple = (date) => {
+                if (!date || isNaN(date)) return '';
+                return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long' }).format(date);
+            };
+
+            kpiMetrics.forEach(metric => {
+                const outliers = calculateOutliers(data, metric);
+                const isLowerBetter = lowerIsBetterMetrics.includes(metric);
+                
+                outliers.forEach(outlier => {
+                    const values = data.map(d => d[metric]).filter(v => typeof v === 'number' && !isNaN(v)).sort((a, b) => a - b);
+                    const q1 = values[Math.floor(values.length / 4)];
+                    const q3 = values[Math.ceil(values.length * (3 / 4))];
+                    const iqr = q3 - q1;
+                    
+                    const isBad = (isLowerBetter && outlier.value > (q3 + iqr * 1.5)) || (!isLowerBetter && outlier.value < (q1 - iqr * 1.5));
+                    if (isBad) {
+                         allOutliers.push({
+                            metric,
+                            value: outlier.value,
+                            date: outlier.Date,
+                            isLowerBetter,
+                        });
+                    }
+                });
+            });
+
+            if(allOutliers.length > 0) {
+                 alertSection.innerHTML = `
+                 <div class="glass-card p-4 rounded-lg">
+                    <h3 class="flex items-center gap-2 font-semibold text-slate-100 mb-3">
+                        <i data-lucide="bell-ring" class="text-amber-400"></i>
+                        Key Performance Alerts
+                    </h3>
+                    <ul class="space-y-2 text-sm max-h-32 overflow-y-auto">
+                        ${allOutliers.map(alert => {
+                             const isPercentage = alert.metric.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(alert.metric);
+                             const formattedValue = alert.value.toFixed(2) + (isPercentage ? '%' : '');
+                             return `
+                                <li class="flex items-start gap-3 p-2 rounded-md hover:bg-slate-800/50">
+                                    <i data-lucide="alert-triangle" class="text-red-400 mt-1 flex-shrink-0"></i>
+                                    <div>
+                                        <span class="font-semibold text-slate-200">${alert.metric}</span> hit an unusual ${alert.isLowerBetter ? 'high' : 'low'} of <strong class="text-white">${formattedValue}</strong> on <span class="font-semibold">${formatDateSimple(alert.date)}</span>.
+                                    </div>
+                                </li>`
+                        }).join('')}
+                    </ul>
+                </div>`;
+            } else {
+                alertSection.innerHTML = `
+                <div class="glass-card p-4 rounded-lg">
+                    <h3 class="flex items-center gap-2 font-semibold text-slate-100 mb-3">
+                        <i data-lucide="bell" class="text-slate-400"></i>
+                        Key Performance Alerts
+                    </h3>
+                    <div class="flex items-center gap-3 p-2 text-sm text-slate-400">
+                        <i data-lucide="check-circle" class="text-emerald-400"></i>
+                        <span>No significant outliers detected in the selected period.</span>
+                    </div>
+                </div>`;
+            }
+             lucide.createIcons();
+        }
+
+
+        // --- Charting Functions ---
+        function showMetricChart(metricName, facilities) {
+            chartModalTitle.textContent = `${metricName} Trend`;
+            if (modalChart) modalChart.destroy();
+
+            showChartModal();
+
+            let datasets = [];
+            let tooltipCallbacks = {};
+
+            const isComparisonMode = facilities.length > 1;
+            const allDates = [...new Set(currentFilteredData.map(d => d.Date))].sort((a,b) => a - b);
+            
+            if (isComparisonMode) {
+                 chartModalTitle.textContent = `Comparison: ${metricName}`;
+                 datasets = facilities.map((facility, index) => {
+                     const facilityData = currentFilteredData.filter(d => d.Facility === facility);
+                     const dataMap = new Map(facilityData.map(d => [d.Date, d[metricName]]));
+                     const chartData = allDates.map(date => dataMap.get(date) || null);
+
+                     return {
+                         label: facility, data: chartData,
+                         borderColor: comparisonColors[index % comparisonColors.length],
+                         backgroundColor: comparisonColors[index % comparisonColors.length] + '33',
+                         fill: false, tension: 0.3, borderWidth: 2,
+                     };
+                 });
+
+            } else {
+                const singleFacilityData = currentFilteredData;
+                 if (metricName === 'OBSL') {
+                    chartModalTitle.textContent = `OBSL Performance Trend`;
+                    datasets = [
+                        { label: 'OBSL FTL', data: singleFacilityData.map(d => d['OBSL FTL']), borderColor: '#818cf8', backgroundColor: '#818cf833', fill: true, tension: 0.3, borderWidth: 2 },
+                        { label: 'OBSL Carting', data: singleFacilityData.map(d => d['OBSL Carting']), borderColor: '#34d399', backgroundColor: '#34d39933', fill: true, tension: 0.3, borderWidth: 2 }
+                    ];
+                    tooltipCallbacks = { label: function(context) { 
+                        const label = context.dataset.label || '';
+                        const value = context.parsed.y;
+                        const dayData = singleFacilityData[context.dataIndex];
+                        let failureCount = 0;
+                        if (dayData) {
+                            if (label === 'OBSL FTL') failureCount = dayData['FTL Failed Trip'];
+                            if (label === 'OBSL Carting') failureCount = dayData['Carting Failed Trip'];
+                        }
+                        return `${label}: ${value.toFixed(2)}% (Failures: ${failureCount || 0})`;
+                     } };
+                } else if (metricName === 'MixBag Fail%') {
+                    datasets = [{ label: metricName, data: singleFacilityData.map(d => d[metricName]), borderColor: '#fb923c', backgroundColor: '#fb923c33', fill: true, tension: 0.3, borderWidth: 2 }];
+                    tooltipCallbacks = {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const dayData = singleFacilityData[context.dataIndex];
+                            const failureCount = dayData ? dayData['MixFailed'] : 0;
+                            return `Fail %: ${value.toFixed(2)}% (Failed Bags: ${failureCount || 0})`;
+                        }
+                    };
+                } else {
+                    const isPercentage = metricName.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metricName) ;
+                    datasets = [{ label: metricName, data: singleFacilityData.map(d => d[metricName]), borderColor: '#60a5fa', backgroundColor: '#60a5fa33', fill: true, tension: 0.3, borderWidth: 2 }];
+                    tooltipCallbacks = { label: function(context) { return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}${isPercentage ? '%' : ''}`; }};
+                }
+            }
+
+            modalChart = new Chart(modalChartCanvas, {
+                type: 'line', data: { labels: allDates, datasets: datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: true, position: 'top' }, tooltip: { enabled: true, backgroundColor: 'rgba(30, 41, 59, 0.9)', titleFont: { weight: 'bold' }, callbacks: tooltipCallbacks }},
+                    scales: { 
+                        x: { 
+                            type: 'time', 
+                            time: { unit: 'day', tooltipFormat: 'MMM dd, yyyy' }, 
+                            grid: { display: false },
+                            ticks: {
+                                callback: function(value, index, ticks) {
+                                    const date = new Date(value);
+                                    if (isNaN(date)) return '';
+                                    const line1 = new Intl.DateTimeFormat('en-GB', { month: 'short', day: '2-digit' }).format(date);
+                                    const line2 = new Intl.DateTimeFormat('en-GB', { weekday: 'short' }).format(date);
+                                    return [line1, line2];
+                                }
+                            }
+                        }, 
+                        y: { beginAtZero: true, grid: { color: '#334155' } }
+                    }
+                }
+            });
+            
+            const insights = calculateTrendInsights(metricName, facilities);
+            const { summary, detailed } = formatInsightsHTML(insights);
+            
+            chartInsightArea.innerHTML = `
+                <div id="insight-summary">${summary}</div>
+                <div id="insight-detailed" class="hidden">${detailed}</div>
+                ${detailed ? `<button id="generate-detailed-btn" class="mt-2 text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                    Show Detailed Analysis
+                </button>` : ''}
+            `;
+            lucide.createIcons();
+            
+            const detailBtn = document.getElementById('generate-detailed-btn');
+            if (detailBtn) {
+                detailBtn.addEventListener('click', (e) => {
+                    document.getElementById('insight-summary').classList.add('hidden');
+                    document.getElementById('insight-detailed').classList.remove('hidden');
+                    e.currentTarget.classList.add('hidden');
+                });
+            }
+        }
+        
+        // --- Modal & Table Functions ---
+        function showDataTableModal() {
+            const subtitle = document.getElementById('data-table-modal-subtitle');
+            if(selectedFacilities.length > 1) {
+                dataTableFacilitySelectorContainer.classList.remove('hidden');
+                dataTableFacilitySelector.innerHTML = selectedFacilities.map(f => `<option value="${f}">${f}</option>`).join('');
+                renderPivotTable(selectedFacilities[0]);
+                subtitle.textContent = `Displaying data for the selected period. Use dropdown to switch facility.`;
+            } else {
+                dataTableFacilitySelectorContainer.classList.add('hidden');
+                renderPivotTable(selectedFacilities[0]);
+                subtitle.textContent = `Displaying data for ${selectedFacilities[0]}.`;
+            }
+
+            dataTableModal.classList.remove('hidden');
+            setTimeout(() => { dataTableModal.classList.add('opacity-100'); dataTableModal.querySelector('.glass-card').classList.remove('scale-95'); }, 10);
+        }
+
+        function renderPivotTable(facilityName) {
+            const facilityData = currentFilteredData.filter(d => d.Facility === facilityName);
+            if(facilityData.length === 0) {
+                 pivotTableContainer.innerHTML = `<p class="text-slate-500 text-center py-8">No data available for ${facilityName} in this period.</p>`;
+                 return;
+            }
+
+            const dates = [...new Set(facilityData.map(d => d.Date))].sort((a,b) => a - b);
+            const metrics = Object.keys(facilityData[0]).filter(key => key !== 'Facility' && key !== 'Date');
+            
+            const dataMap = new Map();
+            facilityData.forEach(row => { dataMap.set(row.Date.toISOString().split('T')[0], row); });
+            
+            const theadHTML = `<thead><tr><th>Metric</th>${dates.map(date => {
+                if (isNaN(date)) return `<th>Invalid Date</th>`;
+                const formattedDate = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+                const dayOfWeek = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(date);
+                return `<th><div>${formattedDate}</div><div class="text-xs font-normal text-slate-400">${dayOfWeek}</div></th>`;
+            }).join('')}</tr></thead>`;
+            
+            const tbodyHTML = `<tbody>${metrics.map(metric => {
+                const isPercentage = metric.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metric);
+                const cells = dates.map((date, index) => {
+                    const row = dataMap.get(date.toISOString().split('T')[0]);
+                    let currentValue = row ? row[metric] : null;
+
+                    let trendHTML = '';
+                    if (index > 0) {
+                        const prevDate = dates[index - 1];
+                        const prevRow = dataMap.get(prevDate.toISOString().split('T')[0]);
+                        let previousValue = prevRow ? prevRow[metric] : null;
+
+                        if (currentValue != null && previousValue != null && typeof currentValue === 'number' && typeof previousValue === 'number') {
+                            const change = currentValue - previousValue;
+                            if (Math.abs(change) > 0.01) {
+                                const isLowerBetter = lowerIsBetterMetrics.includes(metric);
+                                let colorClass = ''; let icon = '';
+                                if (change > 0) { colorClass = isLowerBetter ? 'text-red-400' : 'text-emerald-400'; icon = 'trending-up'; } 
+                                else { colorClass = isLowerBetter ? 'text-emerald-400' : 'text-red-400'; icon = 'trending-down'; }
+                                trendHTML = `<span class="ml-2 text-xs flex items-center ${colorClass}"><i data-lucide="${icon}" class="w-3 h-3"></i></span>`;
+                            }
+                        }
+                    }
+
+                    let formattedValue = '-';
+                    if(currentValue != null && typeof currentValue === 'number') {
+                        formattedValue = currentValue.toFixed(2) + (isPercentage ? '%' : '');
+                    } else if (currentValue != null) {
+                        formattedValue = currentValue;
+                    }
+
+                    return `<td><div class="flex items-center justify-end">${formattedValue}${trendHTML}</div></td>`;
+                }).join('');
+                return `<tr><td>${metric}</td>${cells}</tr>`;
+            }).join('')}</tbody>`;
+
+            pivotTableContainer.innerHTML = `<table class="w-full text-sm text-left text-slate-300 pivot-table">${theadHTML}${tbodyHTML}</table>`;
+            lucide.createIcons();
+        }
+
+        function hideDataTableModal() {
+            dataTableModal.classList.remove('opacity-100');
+            dataTableModal.querySelector('.glass-card').classList.add('scale-95');
+            setTimeout(() => { dataTableModal.classList.add('hidden'); }, 300);
+        }
+
+        function showChartModal() {
+            chartModal.classList.remove('hidden');
+            setTimeout(() => { chartModal.classList.add('opacity-100'); chartModal.querySelector('.glass-card').classList.remove('scale-95'); }, 10);
+        }
+        function hideChartModal() {
+            chartModal.classList.remove('opacity-100');
+            chartModal.querySelector('.glass-card').classList.add('scale-95');
+            setTimeout(() => { chartModal.classList.add('hidden'); }, 300);
+        }
+
+        function populateFacilityModal() {
+             facilityListContainer.innerHTML = sortedFacilities.map(f => `
+                <label for="facility-${f.name}" class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="facility-${f.name}" value="${f.name}" class="custom-checkbox">
+                        <span class="text-slate-200">${f.name}</span>
+                    </div>
+                    <span class="text-sm font-mono px-2 py-1 rounded-md bg-slate-700 text-amber-400">${f.avgRisk.toFixed(2)}</span>
+                </label>
+            `).join('');
+        }
+
+        function showFacilityModal() {
+            const allCheckboxes = facilityListContainer.querySelectorAll('input[type="checkbox"]');
+            allCheckboxes.forEach(cb => {
+                cb.checked = selectedFacilities.includes(cb.value);
+            });
+            facilityModal.classList.remove('hidden');
+            setTimeout(() => { facilityModal.classList.add('opacity-100'); facilityModal.querySelector('.glass-card').classList.remove('scale-95'); }, 10);
+        }
+        function hideFacilityModal() {
+            facilityModal.classList.remove('opacity-100');
+            facilityModal.querySelector('.glass-card').classList.add('scale-95');
+            setTimeout(() => { facilityModal.classList.add('hidden'); }, 300);
+        }
+
+    });
+    </script>
+</body>
+</html>
+
