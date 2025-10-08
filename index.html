@@ -602,7 +602,7 @@
                 
                 facilityStats.sort((a, b) => isLowerBetter ? a.avg - b.avg : b.avg - a.avg);
                 const bestPerformer = facilityStats[0];
-                const worstPerformer = facilityStats[facilityStats.length - 1];
+                const leastPerformer = facilityStats[facilityStats.length - 1];
 
                 facilityStats.sort((a, b) => b.range - a.range);
                 const mostVolatile = facilityStats[0];
@@ -626,8 +626,8 @@
                                 <dd class="font-semibold text-slate-100 truncate text-right">${bestPerformer.facility} (${formatValue(bestPerformer.avg)})</dd>
                             </div>
                             <div class="flex justify-between items-center gap-2">
-                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1.5 text-red-400"></i>Worst</dt>
-                                <dd class="font-semibold text-slate-100 truncate text-right">${worstPerformer.facility} (${formatValue(worstPerformer.avg)})</dd>
+                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1.5 text-red-400"></i>Least</dt>
+                                <dd class="font-semibold text-slate-100 truncate text-right">${leastPerformer.facility} (${formatValue(leastPerformer.avg)})</dd>
                             </div>
                              <div class="flex justify-between items-center gap-2">
                                 <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="zap" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>Volatile</dt>
