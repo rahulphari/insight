@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>inSIGHTs - Facility Performance Dashboard</title>
+    <title>inSIGHTs - Aura Dashboard</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js for data visualization -->
@@ -13,66 +13,80 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.395.0/dist/umd/lucide.min.js"></script>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* Custom scrollbar for a modern look */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background-color: #475569;
-            border-radius: 10px;
-            border: 2px solid #1e293b;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background-color: #64748b;
-        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0f1a; }
+        ::-webkit-scrollbar-thumb { background-color: #3e3b6f; border-radius: 10px; border: 2px solid #0b0f1a; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #5a579e; }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: #e2e8f0;
-            background-image: radial-gradient(#1e293b 1px, transparent 1px);
-            background-size: 20px 20px;
+            color: #e0e7ff;
+            /* Animated gradient background */
+            background: linear-gradient(-45deg, #0b0f1a, #1a1a3d, #3e3b6f, #0b0f1a);
+            background-size: 400% 400%;
+            animation: gradientBG 25s ease infinite;
         }
-        /* Style for file input button */
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: rgba(26, 26, 61, 0.6); /* Darker, more purple-blue tint */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(199, 210, 254, 0.15); /* Indigo-100 at 15% */
+            box-shadow: 0 8px 32px 0 rgba(11, 15, 26, 0.37);
+        }
+
+        /* Pulsing animation for alerts */
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+            70% { opacity: 0.8; box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+        }
+        .animate-pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+        
+        /* Pulsing animation for upload button */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px 0px rgba(129, 140, 248, 0.5); }
+            50% { box-shadow: 0 0 25px 8px rgba(129, 140, 248, 0.2); }
+        }
         .file-input-button {
-            background: linear-gradient(to right, #4f46e5, #818cf8);
+            background: linear-gradient(to right, #6366f1, #8b5cf6);
+            animation: pulse-glow 3s infinite ease-in-out;
         }
         .file-input-button:hover {
-            background: linear-gradient(to right, #4338ca, #6366f1);
+            background: linear-gradient(to right, #4f46e5, #7c3aed);
+            animation: none; /* Pause animation on hover */
         }
-        /* Glassmorphism effect for cards */
-        .glass-card {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .kpi-card, .metric-list-item {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .kpi-card:hover, .metric-list-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2), 0 4px 6px -2px rgba(79, 70, 229, 0.1);
-        }
-        /* Custom checkbox style */
+
+        /* Custom checkbox */
         .custom-checkbox {
             appearance: none;
-            background-color: #334155;
-            border: 1px solid #475569;
+            background-color: #312e81; /* Indigo-800 */
+            border: 1px solid #4f46e5;
             padding: 10px;
             border-radius: 6px;
             display: inline-block;
             position: relative;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
         .custom-checkbox:checked {
-            background-color: #4f46e5;
-            border-color: #6366f1;
+            background-color: #8b5cf6; /* Purple-500 */
+            border-color: #a78bfa;
         }
         .custom-checkbox:checked::after {
             content: '\2713';
@@ -82,52 +96,151 @@
             top: 0px;
             left: 4px;
         }
+        
+        /* Tab Styles */
+        .tab-button {
+            background: transparent;
+            border-bottom: 3px solid transparent;
+            color: #94a3b8; /* Slate-400 */
+            transition: all 0.2s ease;
+        }
+        .tab-button:hover {
+            color: #e0e7ff; /* Indigo-100 */
+        }
+        .tab-button.active {
+            color: #c7d2fe; /* Indigo-200 */
+            font-weight: 600;
+            border-bottom-color: #8b5cf6; /* Purple-500 */
+            box-shadow: 0px 10px 15px -10px rgba(139, 92, 246, 0.3);
+        }
+
         /* Pivot table styling */
         .pivot-table th, .pivot-table td {
             white-space: nowrap;
-            padding: 8px 12px;
+            padding: 10px 14px;
             text-align: right;
-            border-right: 1px solid #334155;
+            border-bottom: 1px solid #1f2937; /* Gray-800 */
+            border-right: 1px solid #1f2937;
         }
-        .pivot-table th:last-child, .pivot-table td:last-child {
-            border-right: none;
+        .pivot-table th:last-child, .pivot-table td:last-child { border-right: none; }
+        .pivot-table th {
+            background-color: rgba(17, 24, 39, 0.8); /* Gray-900 with alpha */
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            color: #94a3b8; /* Slate-400 */
         }
         .pivot-table th:first-child, .pivot-table td:first-child {
             text-align: left;
             font-weight: 600;
+            color: #e0e7ff; /* Indigo-100 */
             position: sticky;
             left: 0;
-            background-color: #1e293b;
+            background-color: #0b0f1a; /* Darkest BG */
             z-index: 10;
         }
          .pivot-table thead th {
             position: sticky;
             top: 0;
-            background-color: #1e293b;
+            background-color: #0b0f1a;
             z-index: 20;
         }
-        .pivot-table tbody tr:nth-child(even) {
-            background-color: rgba(30, 41, 59, 0.7);
+        .pivot-table tbody tr:nth-child(even) td {
+            background-color: rgba(26, 26, 61, 0.3);
+        }
+        .pivot-table tbody tr:hover td {
+            background-color: rgba(62, 59, 111, 0.5);
+        }
+        
+        /* Tooltip for alerts */
+        .tooltip { position: relative; }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 140px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -70px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Custom Date Picker */
+        .custom-date-picker {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            background-color: #1e293b; /* slate-800 */
+            border: 1px solid #334155; /* slate-700 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.625rem 0.75rem; /* p-2.5 + padding-right */
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 150px; /* Ensure it has some width */
+            justify-content: space-between;
+        }
+        .custom-date-picker:hover {
+            border-color: #4f46e5; /* indigo-500 */
+        }
+        .custom-date-picker span {
+            color: #e0e7ff; /* text-white/indigo-100 */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+        .custom-date-picker input[type="date"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        /* Hide default calendar icon for Webkit */
+        .custom-date-picker input[type="date"]::-webkit-calendar-picker-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            cursor: pointer;
         }
     </style>
 </head>
 <body class="antialiased">
 
     <!-- Main Container -->
-    <div id="app" class="min-h-screen p-4 sm:p-6 lg:p-8 transition-all duration-500">
+    <!-- Added relative and pb-16 to make space for the footer -->
+    <div id="app" class="min-h-screen p-4 sm:p-6 lg:p-8 transition-all duration-500 relative pb-16">
         
         <!-- Upload View -->
-        <div id="upload-view" class="flex flex-col items-center justify-center min-h-[80vh]">
+        <div id="upload-view" class="flex flex-col items-center justify-center min-h-[80vh] transition-opacity duration-500">
             <div class="text-center">
-                <i data-lucide="bar-chart-big" class="mx-auto text-indigo-400 mb-4" style="width: 64px; height: 64px;"></i>
-                <h1 class="text-5xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">inSIGHTs</h1>
-                <p class="mt-4 text-lg text-slate-400">Facility Performance Insights Dashboard</p>
-                <p class="mt-2 text-sm text-slate-500 max-w-md mx-auto">Upload your facility performance CSV file to generate an interactive, visual report and uncover key metrics.</p>
+                <i data-lucide="bar-chart-big" class="mx-auto text-purple-400 mb-4" style="width: 64px; height: 64px;"></i>
+                <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-cyan-400">inSIGHTs</h1>
+                <p class="mt-4 text-xl text-indigo-200">Aura Performance Dashboard</p>
+                <p class="mt-2 text-md text-slate-400 max-w-lg mx-auto">Upload your facility performance CSV to generate a dynamic, command-center style visual report and uncover key metrics.</p>
                 
-                <div class="mt-8">
-                    <label for="csv-file-input" class="file-input-button cursor-pointer inline-flex items-center gap-2 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <div class="mt-10">
+                    <label for="csv-file-input" class="file-input-button cursor-pointer inline-flex items-center gap-3 text-white font-semibold py-4 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
                         <i data-lucide="upload-cloud"></i>
-                        Upload CSV File
+                        Select CSV File
                     </label>
                     <input type="file" id="csv-file-input" class="hidden" accept=".csv">
                 </div>
@@ -136,68 +249,111 @@
         </div>
 
         <!-- Dashboard View -->
-        <div id="dashboard-view" class="hidden">
+        <div id="dashboard-view" class="hidden opacity-0 transition-opacity duration-1000">
             <!-- Header -->
-            <header class="mb-8">
-                <div class="flex flex-wrap items-start justify-between gap-6">
+            <header class="mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
                     <!-- Left Side: Title & Facility Selector -->
-                    <div class="flex-1 min-w-[300px]">
-                        <div class="flex items-center gap-3 mb-4">
-                            <i data-lucide="bar-chart-big" class="text-indigo-400" style="width: 32px; height: 32px;"></i>
-                             <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">inSIGHTs</h1>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                             <i data-lucide="bar-chart-big" class="text-purple-400" style="width: 32px; height: 32px;"></i>
+                             <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">inSIGHTs</h1>
                         </div>
-                        <div>
-                            <label class="text-sm font-medium text-slate-400 mb-1 block">Selected Facility</label>
-                            <button id="open-facility-modal-btn" class="w-full bg-slate-900/50 border border-slate-700 text-white text-2xl font-bold rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-3 text-left truncate">
-                                <!-- Populated by JS -->
-                            </button>
-                        </div>
+                        <button id="open-facility-modal-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg focus:ring-4 focus:ring-indigo-800 p-2.5 text-left text-sm flex items-center gap-2 max-w-[250px] truncate">
+                            <!-- Populated by JS -->
+                        </button>
                     </div>
             
-                    <!-- Right Side: Risk Score & Filters -->
-                    <div class="flex-1 flex flex-col items-end gap-4 min-w-[300px] sm:items-end items-stretch">
-                         <!-- Risk Score Card -->
-                         <div id="risk-score-card" class="glass-card p-4 rounded-xl w-full max-w-sm text-right">
-                             <p class="text-sm text-slate-400 flex items-center justify-end gap-2">
-                                <i data-lucide="shield-alert" class="w-4 h-4"></i>
-                                <span id="risk-score-label">Average Risk Score</span>
-                            </p>
-                             <h3 id="avg-risk-score" class="text-4xl font-bold text-slate-100">0.00</h3>
-                         </div>
-                         <!-- Filters -->
-                         <div class="flex flex-wrap items-center gap-2 justify-end">
-                            <input type="date" id="date-start" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2 w-full sm:w-auto">
-                            <span class="text-slate-500">to</span>
-                            <input type="date" id="date-end" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2 w-full sm:w-auto">
-                            <button id="reset-button" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
-                                <i data-lucide="rotate-cw" class="w-4 h-4"></i> Reset
-                            </button>
-                         </div>
+                    <!-- Middle: Filters -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Custom Date Input: Start -->
+                        <div class="custom-date-picker w-full sm:w-auto">
+                            <span id="date-start-display">Select Date</span>
+                            <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                            <input type="date" id="date-start" class="w-full sm:w-auto">
+                        </div>
+                        <span class="text-slate-500 hidden sm:inline">to</span>
+                        <!-- Custom Date Input: End -->
+                        <div class="custom-date-picker w-full sm:w-auto">
+                            <span id="date-end-display">Select Date</span>
+                            <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                            <input type="date" id="date-end" class="w-full sm:w-auto">
+                        </div>
+
+                        <button id="reset-button" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
+                            <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Right Side: Risk Score Hero -->
+                    <div class="glass-card p-4 rounded-xl flex-1 min-w-[300px] sm:max-w-sm">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-sm text-indigo-300 flex items-center gap-2">
+                                    <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                                    <span id="risk-score-label">Average Risk Score</span>
+                                </p>
+                                <h3 id="avg-risk-score" class="text-4xl font-bold text-slate-100">0.00</h3>
+                            </div>
+                            <div class="w-2/5 h-16">
+                                <canvas id="risk-sparkline-chart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
 
+            <!-- Tab Navigation -->
+            <nav class="flex items-center gap-6 border-b border-gray-700/50 mb-6">
+                <button id="tab-overview" class="tab-button py-3 px-2 active">
+                    <i data-lucide="layout-grid" class="w-4 h-4 inline-block mr-2"></i>
+                    KPI Overview
+                </button>
+                <button id="tab-data-explorer" class="tab-button py-3 px-2">
+                    <i data-lucide="table-2" class="w-4 h-4 inline-block mr-2"></i>
+                    Data Explorer
+                </button>
+            </nav>
+
             <!-- Dashboard Content -->
-            <main class="pb-24">
-                <!-- KPI Cards Grid -->
-                <div id="kpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-8">
-                    <!-- Populated in Single-Facility or Comparison Mode -->
+            <main>
+                <!-- KPI Grid View -->
+                <div id="kpi-view">
+                    <div id="kpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-8">
+                        <!-- Populated in Single-Facility or Comparison Mode -->
+                    </div>
+                </div>
+
+                <!-- Data Explorer View -->
+                <div id="data-explorer-view" class="hidden">
+                    <div class="glass-card rounded-xl p-4 sm:p-6 w-full h-[75vh]">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 flex-shrink-0">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-100">Detailed Daily Data</h3>
+                                <p id="data-table-modal-subtitle" class="text-sm text-slate-400"></p>
+                            </div>
+                            <div id="data-table-facility-selector-container" class="hidden mt-4 sm:mt-0">
+                                <select id="data-table-facility-selector" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"></select>
+                            </div>
+                        </div>
+                        <div id="pivot-table-container" class="flex-grow overflow-auto h-[calc(75vh-100px)]">
+                            <!-- Pivot table will be rendered here -->
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
+
+        <!-- Footer Signature -->
+        <footer class="absolute bottom-6 left-0 right-0 text-center text-slate-500 text-sm">
+            Crafted for NROK Falcons – Speed with Precision ⚡ by Rh
+        </footer>
     </div>
     
-    <!-- Floating Action Button for Detailed Data -->
-    <button id="open-data-table-modal-btn" class="hidden fixed bottom-6 left-6 file-input-button text-white font-semibold py-3 px-4 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300 z-40 flex items-center gap-2">
-        <i data-lucide="table-2"></i>
-        <span class="hidden sm:inline">Show Detailed Data</span>
-    </button>
-
-
     <!-- Modals -->
 
     <!-- Chart Modal -->
-    <div id="chart-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
+    <div id="chart-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="glass-card rounded-xl w-full max-w-4xl max-h-[90vh] p-6 flex flex-col transform transition-transform duration-300 scale-95">
             <div class="flex items-center justify-between mb-4">
                 <h3 id="chart-modal-title" class="text-xl font-bold text-slate-100">Metric Trend</h3>
@@ -205,24 +361,25 @@
                     <i data-lucide="x"></i>
                 </button>
             </div>
-            <div class="relative flex-grow min-h-[300px]">
+            <div class="relative flex-grow min-h-[300px] md:min-h-[400px]">
                  <canvas id="modal-chart-canvas"></canvas>
             </div>
-            <div id="chart-insight-area" class="mt-4 pt-4 border-t border-slate-700">
+            <div id="chart-insight-area" class="mt-4 pt-4 border-t border-indigo-900/50">
                 <!-- Insight will be populated here -->
             </div>
         </div>
     </div>
 
     <!-- Facility Selector Modal -->
-    <div id="facility-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
-        <div class="glass-card rounded-xl w-full max-w-md max-h-[80vh] p-6 flex flex-col transform transition-transform duration-300 scale-95">
+    <div id="facility-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="glass-card rounded-xl w-full max-w-lg max-h-[80vh] p-6 flex flex-col transform transition-transform duration-300 scale-95">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-slate-100">Select Facilities</h3>
                 <button id="facility-modal-close-btn" class="text-slate-400 hover:text-white">
                     <i data-lucide="x"></i>
                 </button>
             </div>
+            <p class="text-sm text-slate-400 mb-4">Select one for a detailed view or multiple for comparison (up to 8).</p>
             <div id="facility-list-container" class="flex-grow overflow-y-auto -mr-2 pr-2 space-y-2">
                 <!-- Facility items will be populated by JS -->
             </div>
@@ -231,32 +388,11 @@
             </div>
         </div>
     </div>
-    
-    <!-- Detailed Data Table Modal -->
-    <div id="data-table-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300">
-        <div class="glass-card rounded-xl w-full max-w-7xl h-[90vh] p-6 flex flex-col transform transition-transform duration-300 scale-95">
-            <div class="flex items-center justify-between mb-4 flex-shrink-0">
-                <div>
-                     <h3 class="text-xl font-bold text-slate-100">Detailed Daily Data</h3>
-                     <p id="data-table-modal-subtitle" class="text-sm text-slate-400"></p>
-                </div>
-                <div id="data-table-facility-selector-container" class="hidden">
-                    <select id="data-table-facility-selector" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"></select>
-                </div>
-                <button id="data-table-modal-close-btn" class="text-slate-400 hover:text-white">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <div id="pivot-table-container" class="flex-grow overflow-auto">
-                <!-- Pivot table will be rendered here -->
-            </div>
-        </div>
-    </div>
 
 
     <script>
     window.addEventListener('load', () => {
-        // DOM Elements
+        // === DOM Elements ===
         const uploadView = document.getElementById('upload-view');
         const dashboardView = document.getElementById('dashboard-view');
         const fileInput = document.getElementById('csv-file-input');
@@ -264,33 +400,50 @@
         const openFacilityModalBtn = document.getElementById('open-facility-modal-btn');
         const dateStartFilter = document.getElementById('date-start');
         const dateEndFilter = document.getElementById('date-end');
+        const dateStartDisplay = document.getElementById('date-start-display');
+        const dateEndDisplay = document.getElementById('date-end-display');
         const resetButton = document.getElementById('reset-button');
         const avgRiskScoreEl = document.getElementById('avg-risk-score');
         const riskScoreLabel = document.getElementById('risk-score-label');
+        const riskSparklineCanvas = document.getElementById('risk-sparkline-chart');
         const kpiGrid = document.getElementById('kpi-grid');
+        
+        // Tabs
+        const tabOverview = document.getElementById('tab-overview');
+        const tabDataExplorer = document.getElementById('tab-data-explorer');
+        const kpiView = document.getElementById('kpi-view');
+        const dataExplorerView = document.getElementById('data-explorer-view');
+
+        // Chart Modal
         const chartModal = document.getElementById('chart-modal');
         const chartModalTitle = document.getElementById('chart-modal-title');
         const modalCloseBtn = document.getElementById('modal-close-btn');
         const modalChartCanvas = document.getElementById('modal-chart-canvas');
         const chartInsightArea = document.getElementById('chart-insight-area');
+        
+        // Facility Modal
         const facilityModal = document.getElementById('facility-modal');
         const facilityModalCloseBtn = document.getElementById('facility-modal-close-btn');
         const applyFacilitySelectionBtn = document.getElementById('apply-facility-selection-btn');
         const facilityListContainer = document.getElementById('facility-list-container');
-        const openDataTableModalBtn = document.getElementById('open-data-table-modal-btn');
-        const dataTableModal = document.getElementById('data-table-modal');
-        const dataTableModalCloseBtn = document.getElementById('data-table-modal-close-btn');
+        
+        // Data Explorer (formerly modal)
         const dataTableFacilitySelectorContainer = document.getElementById('data-table-facility-selector-container');
         const dataTableFacilitySelector = document.getElementById('data-table-facility-selector');
         const pivotTableContainer = document.getElementById('pivot-table-container');
+        const dataTableModalSubtitle = document.getElementById('data-table-modal-subtitle');
 
-        // Global state
+
+        // === Global State ===
         let fullData = [];
         let currentFilteredData = [];
         let modalChart = null;
+        let riskSparklineChart = null;
+        let kpiSparklineCharts = {}; // To store chart instances for each KPI card
         let sortedFacilities = [];
         let selectedFacilities = [];
 
+        // === Constants ===
         const kpiMetrics = [
             'RiskScore', '5AM Fail%', 'OBSL', 'PUT%', 'P1 Comp% PickList', 
             'MixBag Fail%', 'FIFO Fail%', 'EOS Fail%', 'Short Sent', 'B2B Ageing',
@@ -310,27 +463,51 @@
 
         const comparisonColors = ['#818cf8', '#34d399', '#fb923c', '#60a5fa', '#f87171', '#a78bfa', '#fbbf24', '#4ade80'];
 
+        // === Chart.js Defaults ===
         Chart.defaults.color = '#94a3b8';
-        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.borderColor = 'rgba(199, 210, 254, 0.15)'; // Indigo-100 at 15%
         Chart.defaults.font.family = 'Inter, sans-serif';
 
         lucide.createIcons();
 
-        // --- Event Listeners ---
+        // === Event Listeners ===
         fileInput.addEventListener('change', handleFileUpload);
-        dateStartFilter.addEventListener('change', updateDashboard);
-        dateEndFilter.addEventListener('change', updateDashboard);
+        dateStartFilter.addEventListener('change', () => {
+            dateStartDisplay.textContent = formatDisplayDate(dateStartFilter.value);
+            updateDashboard();
+        });
+        dateEndFilter.addEventListener('change', () => {
+            dateEndDisplay.textContent = formatDisplayDate(dateEndFilter.value);
+            updateDashboard();
+        });
         resetButton.addEventListener('click', resetFilters);
+        
+        // Tab listeners
+        tabOverview.addEventListener('click', () => {
+            tabOverview.classList.add('active');
+            tabDataExplorer.classList.remove('active');
+            kpiView.classList.remove('hidden');
+            dataExplorerView.classList.add('hidden');
+        });
+        tabDataExplorer.addEventListener('click', () => {
+            tabDataExplorer.classList.add('active');
+            tabOverview.classList.remove('active');
+            dataExplorerView.classList.remove('hidden');
+            kpiView.classList.add('hidden');
+            renderDataExplorer(); // Render the data table when tab is clicked
+        });
+
         // Chart Modal listeners
         modalCloseBtn.addEventListener('click', hideChartModal);
         chartModal.addEventListener('click', (e) => { if (e.target === chartModal) hideChartModal(); });
+        
         // Facility Modal listeners
         openFacilityModalBtn.addEventListener('click', showFacilityModal);
         facilityModalCloseBtn.addEventListener('click', hideFacilityModal);
         facilityModal.addEventListener('click', (e) => { if (e.target === facilityModal) hideFacilityModal(); });
         applyFacilitySelectionBtn.addEventListener('click', () => {
             const checkedBoxes = facilityListContainer.querySelectorAll('input[type="checkbox"]:checked');
-            selectedFacilities = Array.from(checkedBoxes).map(cb => cb.value);
+            selectedFacilities = Array.from(checkedBoxes).map(cb => cb.value).slice(0, 8); // Limit to 8
             if (selectedFacilities.length === 0) {
                 // Prevent de-selecting all, fallback to first
                 selectedFacilities.push(sortedFacilities[0].name);
@@ -338,13 +515,41 @@
             hideFacilityModal();
             updateDashboard();
         });
-        // Data Table Modal Listeners
-        openDataTableModalBtn.addEventListener('click', showDataTableModal);
-        dataTableModalCloseBtn.addEventListener('click', hideDataTableModal);
-        dataTableModal.addEventListener('click', (e) => { if (e.target === dataTableModal) hideDataTableModal(); });
+
+        // Data Explorer Listeners
         dataTableFacilitySelector.addEventListener('change', (e) => renderPivotTable(e.target.value));
 
-        // --- Main Functions ---
+        // === Helper Functions ===
+
+        /**
+         * Formats a date string (YYYY-MM-DD) into a user-friendly format (DD-MMM-YYYY).
+         * @param {string} dateString The date string to format.
+         * @returns {string} Formatted date.
+         */
+        function formatDisplayDate(dateString) {
+            if (!dateString) return 'Select Date';
+            try {
+                const date = new Date(dateString + 'T00:00:00'); // Ensure it parses as local
+                if (isNaN(date)) return 'Select Date';
+                // Format as DD-MMM-YYYY (e.g., 25-Oct-2025)
+                const parts = new Intl.DateTimeFormat('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                }).formatToParts(date);
+                
+                const day = parts.find(p => p.type === 'day').value;
+                const month = parts.find(p => p.type === 'month').value;
+                const year = parts.find(p => p.type === 'year').value;
+                
+                return `${day}-${month}-${year}`;
+            } catch (e) {
+                console.error('Error formatting date:', e);
+                return 'Select Date';
+            }
+        }
+
+        // === Main Functions ===
 
         /**
          * Parses a date string from various common formats.
@@ -387,10 +592,10 @@
                         setupDashboard();
                         uploadView.classList.add('opacity-0', 'pointer-events-none');
                         setTimeout(() => {
-                           uploadView.classList.add('hidden');
-                           dashboardView.classList.remove('hidden');
-                           openDataTableModalBtn.classList.remove('hidden');
-                           lucide.createIcons();
+                            uploadView.classList.add('hidden');
+                            dashboardView.classList.remove('hidden');
+                            dashboardView.classList.add('opacity-100');
+                            lucide.createIcons();
                         }, 500);
                     } catch (error) { console.error('Error processing data:', error); uploadError.textContent = 'Error processing CSV.'; }
                 },
@@ -412,7 +617,7 @@
                 const percentCols = ['5AM Fail%', 'OBSL', 'OBSL FTL', 'OBSL Carting', 'MixBag Fail%', 'PUT%', 'P1 Comp% PickList', 'P1 -CC Not Conn%', 'P1 Floor Not Conn%', 'FIFO Fail%', 'EOS Fail%', 'Air FIFO%', 'Pur Pick%', 'Reg Roster', 'Adhoc Roster%'];
                 percentCols.forEach(col => {
                     if (processedRow[col] != null && typeof processedRow[col] === 'number') {
-                       processedRow[col] = processedRow[col] * 100;
+                         processedRow[col] = processedRow[col] * 100;
                     }
                 });
                 return processedRow;
@@ -427,7 +632,7 @@
                 const facilityData = fullData.filter(d => d.Facility === name);
                 const riskScores = facilityData.map(d => d.RiskScore).filter(v => v != null && !isNaN(v));
                 return { name, avgRisk: avg(riskScores) };
-            }).sort((a, b) => b.avgRisk - a.avgRisk);
+            }).sort((a, b) => b.avgRisk - a.avgRisk); // Highest risk first
             
             // Set initial selection
             if(sortedFacilities.length > 0) {
@@ -439,8 +644,32 @@
             const dates = fullData.map(d => d.Date).sort((a,b) => a - b);
             const minDate = dates[0]?.toISOString().split('T')[0];
             const maxDate = dates[dates.length-1]?.toISOString().split('T')[0];
-            dateStartFilter.value = minDate; dateStartFilter.min = minDate; dateStartFilter.max = maxDate;
-            dateEndFilter.value = maxDate; dateEndFilter.min = minDate; dateEndFilter.max = maxDate;
+            
+            dateStartFilter.value = minDate; 
+            dateStartFilter.min = minDate; 
+            dateStartFilter.max = maxDate;
+            dateStartDisplay.textContent = formatDisplayDate(minDate);
+            
+            dateEndFilter.value = maxDate; 
+            dateEndFilter.min = minDate; 
+            dateEndFilter.max = maxDate;
+            dateEndDisplay.textContent = formatDisplayDate(maxDate);
+            
+            updateDashboard();
+        }
+
+        function resetFilters() {
+            if (sortedFacilities.length > 0) { selectedFacilities = [sortedFacilities[0].name]; }
+            const dates = fullData.map(d => d.Date).sort((a,b) => a - b);
+            
+            const minDate = dates[0]?.toISOString().split('T')[0];
+            const maxDate = dates[dates.length-1]?.toISOString().split('T')[0];
+
+            dateStartFilter.value = minDate;
+            dateStartDisplay.textContent = formatDisplayDate(minDate);
+            
+            dateEndFilter.value = maxDate;
+            dateEndDisplay.textContent = formatDisplayDate(maxDate);
             
             updateDashboard();
         }
@@ -461,16 +690,25 @@
             currentFilteredData = fullData.filter(d => {
                 const itemDate = d.Date; // Date is already a Date object
                 return selectedFacilities.includes(d.Facility) && itemDate >= startDate && itemDate <= endDate;
-            });
+            }).sort((a, b) => a.Date - b.Date); // Ensure data is sorted by date
             
             const isComparisonMode = selectedFacilities.length > 1;
             
             updateHeader(currentFilteredData, isComparisonMode);
             
+            // Clear all old sparkline charts
+            Object.values(kpiSparklineCharts).forEach(chart => chart.destroy());
+            kpiSparklineCharts = {};
+
             if (isComparisonMode) {
                 updateComparisonKPIs();
             } else {
                 updateSingleKPIs(currentFilteredData);
+            }
+            
+            // Re-render data explorer if it's the active tab
+            if (tabDataExplorer.classList.contains('active')) {
+                renderDataExplorer();
             }
         }
         
@@ -480,12 +718,16 @@
              avgRiskScoreEl.textContent = avgRisk.toFixed(2);
              
              if (isComparisonMode) {
-                 openFacilityModalBtn.textContent = `${selectedFacilities.length} Facilities Selected`;
+                 openFacilityModalBtn.innerHTML = `<i data-lucide="layers" class="w-4 h-4"></i> ${selectedFacilities.length} Facilities`;
                  riskScoreLabel.textContent = "Combined Avg. Risk Score";
              } else {
-                 openFacilityModalBtn.textContent = selectedFacilities[0] || "No Selection";
+                 openFacilityModalBtn.innerHTML = `<i data-lucide="building" class="w-4 h-4"></i> ${selectedFacilities[0] || "No Selection"}`;
                  riskScoreLabel.textContent = "Average Risk Score";
              }
+             lucide.createIcons();
+             
+             // Update the hero risk sparkline
+             updateRiskSparkline(data, isComparisonMode);
         }
         
         function updateSingleKPIs(data) {
@@ -512,30 +754,11 @@
                 }
                 
                 const iconName = metricToIconMap[metric] || metricToIconMap['default'];
-                
-                let trendHTML = '';
-                if (data.length > 1) {
-                    const startValue = data[0][metric];
-                    const endValue = data[data.length - 1][metric];
-                    
-                    if (startValue != null && endValue != null && startValue !== 0) {
-                        const change = ((endValue - startValue) / Math.abs(startValue)) * 100;
-                        const isLowerBetter = lowerIsBetterMetrics.includes(metric);
-                        
-                        let colorClass = 'text-slate-500'; let icon = 'minus';
-                        if (change > 0.1) { colorClass = isLowerBetter ? 'text-red-400' : 'text-emerald-400'; icon = 'arrow-up'; } 
-                        else if (change < -0.1) { colorClass = isLowerBetter ? 'text-emerald-400' : 'text-red-400'; icon = 'arrow-down'; }
-
-                        if (icon !== 'minus') {
-                           trendHTML = `<span class="text-xs font-bold flex items-center ${colorClass}"><i data-lucide="${icon}" class="w-3 h-3"></i>${Math.abs(change).toFixed(1)}%</span>`;
-                        }
-                    }
-                }
+                const isLowerBetter = lowerIsBetterMetrics.includes(metric);
 
                 // Outlier calculation for card alert
                 let alertHTML = '';
                 const outliers = calculateOutliers(data, metric);
-                const isLowerBetter = lowerIsBetterMetrics.includes(metric);
                 const badOutliers = outliers.filter(outlier => {
                     const stats = calculateStats(data.map(d => d[metric]));
                     if (!stats) return false;
@@ -546,33 +769,40 @@
                     const mostRecentOutlier = badOutliers.sort((a, b) => b.Date - a.Date)[0];
                     const formattedDate = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' }).format(mostRecentOutlier.Date);
                     alertHTML = `
-                        <div class="mt-2 pt-2 border-t border-slate-700/50 flex items-center text-xs text-amber-400">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 mr-1.5 flex-shrink-0"></i>
-                            <span>High alert on ${formattedDate}</span>
+                        <div class="absolute top-3 right-3 tooltip">
+                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse-red"></div>
+                            <span class="tooltip-text">Alert on ${formattedDate}</span>
                         </div>`;
                 }
 
-
                 const card = document.createElement('div');
-                card.className = "glass-card kpi-card p-4 rounded-xl cursor-pointer flex flex-col justify-between min-h-[120px]";
+                card.className = "glass-card kpi-card p-4 rounded-xl cursor-pointer flex flex-col justify-between min-h-[160px] relative transition-all duration-300 hover:border-indigo-400/50";
                 card.dataset.metric = metric;
                 card.innerHTML = `
                     <div>
                         <div class="flex items-center gap-3 mb-2">
-                            <div class="p-2 bg-slate-900/50 rounded-lg">
-                               <i data-lucide="${iconName}" class="w-5 h-5 text-indigo-400"></i>
+                            <div class="p-2 bg-indigo-900/50 rounded-lg">
+                               <i data-lucide="${iconName}" class="w-5 h-5 text-indigo-300"></i>
                             </div>
-                            <p class="text-sm text-slate-400 truncate">${metric} <span class="text-slate-500">${valueType}</span></p>
+                            <p class="text-sm text-slate-300 truncate">${metric} <span class="text-slate-500">${valueType}</span></p>
                         </div>
-                        <div class="flex items-baseline">
-                            <h3 class="text-2xl font-bold text-slate-100">${displayValue}</h3>
-                            ${trendHTML}
-                        </div>
+                        <h3 class="text-3xl font-bold text-slate-100">${displayValue}</h3>
+                    </div>
+                    <div class="mt-2 h-12 w-full">
+                        <canvas id="sparkline-${metric}"></canvas>
                     </div>
                     ${alertHTML}`;
                 
                 card.addEventListener('click', (e) => showMetricChart(e.currentTarget.dataset.metric, selectedFacilities));
                 kpiGrid.appendChild(card);
+                
+                // Render the sparkline for this card
+                const canvas = document.getElementById(`sparkline-${metric}`);
+                if (canvas) {
+                    const chartData = data.map(d => ({ x: d.Date, y: d[metric] }));
+                    const chartInstance = renderSparkline(canvas, chartData, isLowerBetter);
+                    kpiSparklineCharts[metric] = chartInstance;
+                }
             });
 
             lucide.createIcons();
@@ -582,7 +812,7 @@
             kpiGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8';
             kpiGrid.innerHTML = '';
 
-            kpiMetrics.forEach(metric => {
+            kpiMetrics.forEach((metric, metricIndex) => {
                 const isPercentage = metric.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metric);
                 const formatValue = (val) => val.toFixed(2) + (isPercentage ? '%' : '');
 
@@ -596,7 +826,7 @@
                     return { facility, avg, range: max - min };
                 }).filter(s => !isNaN(s.avg));
 
-                if (facilityStats.length < 2) return;
+                if (facilityStats.length < 1) return;
 
                 const isLowerBetter = lowerIsBetterMetrics.includes(metric);
                 
@@ -610,31 +840,46 @@
                 const iconName = metricToIconMap[metric] || 'default';
 
                 const card = document.createElement('div');
-                card.className = "glass-card kpi-card p-4 rounded-xl cursor-pointer flex flex-col justify-between";
+                card.className = "glass-card kpi-card p-4 rounded-xl cursor-pointer flex flex-col justify-between min-h-[160px] transition-all duration-300 hover:border-indigo-400/50";
                 card.dataset.metric = metric;
                 card.innerHTML = `
                      <div>
-                        <div class="flex items-center gap-3 mb-3">
-                             <div class="p-2 bg-slate-900/50 rounded-lg">
-                               <i data-lucide="${iconName}" class="w-5 h-5 text-indigo-400"></i>
-                            </div>
-                            <p class="text-base font-semibold text-slate-200 truncate">${metric}</p>
-                        </div>
-                        <dl class="text-xs space-y-2">
-                            <div class="flex justify-between items-center gap-2">
-                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>Best</dt>
-                                <dd class="font-semibold text-slate-100 truncate text-right">${bestPerformer.facility} (${formatValue(bestPerformer.avg)})</dd>
-                            </div>
-                            <div class="flex justify-between items-center gap-2">
-                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1.5 text-red-400"></i>Least</dt>
-                                <dd class="font-semibold text-slate-100 truncate text-right">${leastPerformer.facility} (${formatValue(leastPerformer.avg)})</dd>
-                            </div>
+                         <div class="flex items-center gap-3 mb-3">
+                             <div class="p-2 bg-indigo-900/50 rounded-lg">
+                                <i data-lucide="${iconName}" class="w-5 h-5 text-indigo-300"></i>
+                             </div>
+                             <p class="text-base font-semibold text-slate-200 truncate">${metric}</p>
+                         </div>
+                         <dl class="text-xs space-y-2 mt-4">
                              <div class="flex justify-between items-center gap-2">
-                                <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="zap" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>Volatile</dt>
-                                <dd class="font-semibold text-slate-100 truncate text-right">${mostVolatile.facility}</dd>
-                            </div>
-                        </dl>
-                    </div>`;
+                                 <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-emerald-400"></i>Best</dt>
+                                 <dd class="font-semibold text-slate-100 truncate text-right">
+                                     <span class="px-2 py-0.5 rounded" style="background-color: ${comparisonColors[selectedFacilities.indexOf(bestPerformer.facility) % comparisonColors.length]}33; color: ${comparisonColors[selectedFacilities.indexOf(bestPerformer.facility) % comparisonColors.length]}">
+                                         ${bestPerformer.facility}
+                                     </span> 
+                                     (${formatValue(bestPerformer.avg)})
+                                 </dd>
+                             </div>
+                             ${facilityStats.length > 1 ? `
+                             <div class="flex justify-between items-center gap-2">
+                                 <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="shield-alert" class="w-3.5 h-3.5 mr-1.5 text-red-400"></i>Least</dt>
+                                 <dd class="font-semibold text-slate-100 truncate text-right">
+                                     <span class="px-2 py-0.5 rounded" style="background-color: ${comparisonColors[selectedFacilities.indexOf(leastPerformer.facility) % comparisonColors.length]}33; color: ${comparisonColors[selectedFacilities.indexOf(leastPerformer.facility) % comparisonColors.length]}">
+                                        ${leastPerformer.facility}
+                                     </span> 
+                                     (${formatValue(leastPerformer.avg)})
+                                 </dd>
+                             </div>` : ''}
+                             <div class="flex justify-between items-center gap-2">
+                                 <dt class="text-slate-400 flex items-center flex-shrink-0"><i data-lucide="zap" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>Volatile</dt>
+                                 <dd class="font-semibold text-slate-100 truncate text-right">
+                                     <span class="px-2 py-0.5 rounded" style="background-color: ${comparisonColors[selectedFacilities.indexOf(mostVolatile.facility) % comparisonColors.length]}33; color: ${comparisonColors[selectedFacilities.indexOf(mostVolatile.facility) % comparisonColors.length]}">
+                                        ${mostVolatile.facility}
+                                     </span>
+                                 </dd>
+                             </div>
+                         </dl>
+                     </div>`;
 
                 card.addEventListener('click', (e) => showMetricChart(e.currentTarget.dataset.metric, selectedFacilities));
                 kpiGrid.appendChild(card);
@@ -643,7 +888,7 @@
         }
 
 
-        // --- Insight & Alert Calculation ---
+        // === Insight & Alert Calculation ===
         function calculateTrendInsights(metricName, facilities) {
             const isComparison = facilities.length > 1;
             const isPercentage = metricName.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metricName);
@@ -701,47 +946,52 @@
 
              if(insights.isComparison) {
                  summaryHTML = `
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p class="text-slate-400 font-semibold">Best Performer (Avg)</p>
-                            <p class="text-slate-100 text-lg font-bold">${insights.bestPerformer.facility}</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-400 font-semibold">Most Volatile (Range)</p>
-                            <p class="text-slate-100 text-lg font-bold">${insights.mostVolatile.facility}</p>
-                        </div>
-                    </div>
+                     <div class="grid grid-cols-2 gap-4 text-sm">
+                         <div>
+                             <p class="text-slate-400 font-semibold">Best Performer (Avg)</p>
+                             <p class="text-slate-100 text-lg font-bold">${insights.bestPerformer.facility}</p>
+                         </div>
+                         <div>
+                             <p class="text-slate-400 font-semibold">Most Volatile (Range)</p>
+                             <p class="text-slate-100 text-lg font-bold">${insights.mostVolatile.facility}</p>
+                         </div>
+                     </div>
                  `;
                  detailedHTML = `
-                    <dl class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                        ${insights.allFacilities.map(f => `
-                            <dt class="text-slate-400 col-span-2">${f.facility} Avg:</dt>
-                            <dd class="text-slate-200 font-semibold text-right">${!isNaN(f.avg) ? insights.formatValue(f.avg) : 'N/A'}</dd>
-                        `).join('')}
-                    </dl>
+                     <dl class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                         ${insights.allFacilities.map(f => `
+                             <dt class="text-slate-400 col-span-2">${f.facility} Avg:</dt>
+                             <dd class="text-slate-200 font-semibold text-right">${!isNaN(f.avg) ? insights.formatValue(f.avg) : 'N/A'}</dd>
+                         `).join('')}
+                     </dl>
                  `;
              } else {
+                 const changeColor = insights.change >= 0 ? 'text-emerald-400' : 'text-red-400';
+                 // Special check for lower-is-better metrics
+                 const isLowerBetter = lowerIsBetterMetrics.includes(chartModalTitle.textContent.replace(' Trend', '').replace('Comparison: ', ''));
+                 const changeColorFinal = (isLowerBetter && insights.change >= 0) || (!isLowerBetter && insights.change < 0) ? 'text-red-400' : 'text-emerald-400';
+
                  summaryHTML = `
-                    <div class="grid grid-cols-2 gap-4 text-sm">
+                     <div class="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                             <p class="text-slate-400 font-semibold">Average Value</p>
+                             <p class="text-slate-100 text-lg font-bold">${insights.formatValue(insights.avg)}</p>
+                         </div>
                          <div>
-                            <p class="text-slate-400 font-semibold">Average Value</p>
-                            <p class="text-slate-100 text-lg font-bold">${insights.formatValue(insights.avg)}</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-400 font-semibold">Overall Change</p>
-                            <p class="text-lg font-bold ${insights.change >= 0 ? 'text-emerald-400' : 'text-red-400'}">
-                                ${insights.change >= 0 ? '+' : ''}${insights.change.toFixed(2)}%
-                            </p>
-                        </div>
-                    </div>
+                             <p class="text-slate-400 font-semibold">Overall Change</p>
+                             <p class="text-lg font-bold ${changeColorFinal}">
+                                 ${insights.change >= 0 ? '+' : ''}${insights.change.toFixed(2)}%
+                             </p>
+                         </div>
+                     </div>
                  `;
                  detailedHTML = `
-                    <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                        <dt class="text-slate-400">Start Value:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.startVal)}</dd>
-                        <dt class="text-slate-400">End Value:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.endVal)}</dd>
-                        <dt class="text-slate-400">Highest Point:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.max)} on ${insights.maxDate}</dd>
-                        <dt class="text-slate-400">Lowest Point:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.min)} on ${insights.minDate}</dd>
-                    </dl>
+                     <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                         <dt class="text-slate-400">Start Value:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.startVal)}</dd>
+                         <dt class="text-slate-400">End Value:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.endVal)}</dd>
+                         <dt class="text-slate-400">Highest Point:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.max)} on ${insights.maxDate}</dd>
+                         <dt class="text-slate-400">Lowest Point:</dt><dd class="text-slate-200 font-semibold">${insights.formatValue(insights.min)} on ${insights.minDate}</dd>
+                     </dl>
                  `;
              }
              return { summary: summaryHTML, detailed: detailedHTML };
@@ -756,9 +1006,7 @@
             const iqr = q3 - q1;
             
             return {
-                q1,
-                q3,
-                iqr,
+                q1, q3, iqr,
                 upperBound: q3 + iqr * 1.5,
                 lowerBound: q1 - iqr * 1.5
             };
@@ -775,7 +1023,110 @@
         }
 
 
-        // --- Charting Functions ---
+        // === Charting Functions ===
+        
+        /**
+         * Renders a small sparkline chart on a given canvas.
+         */
+        function renderSparkline(canvas, data, isLowerBetter) {
+            if (!canvas) return null;
+            const ctx = canvas.getContext('2d');
+            
+            const mainColor = isLowerBetter ? '#34d399' : '#818cf8'; // Emerald vs Indigo
+            const trendColor = data.length > 1 && data[data.length-1].y > data[0].y 
+                ? (isLowerBetter ? '#f87171' : '#34d399') // Bad trend (up) is red, good trend (up) is green
+                : (isLowerBetter ? '#34d399' : '#f87171'); // Bad trend (down) is red, good trend (down) is green
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Metric',
+                        data: data,
+                        borderColor: trendColor,
+                        borderWidth: 2,
+                        fill: true,
+                        backgroundColor: `${trendColor}33`,
+                        tension: 0.4,
+                        pointRadius: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { type: 'time', display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+        }
+        
+        /**
+         * Renders the main hero risk sparkline.
+         */
+        function updateRiskSparkline(data, isComparisonMode) {
+            if (riskSparklineChart) riskSparklineChart.destroy();
+            
+            let chartData, trendColor;
+            const isLowerBetter = true; // Risk score
+            
+            if (isComparisonMode) {
+                // Average all selected facilities' risk scores by day
+                const dateMap = new Map();
+                data.forEach(d => {
+                    const dateStr = d.Date.toISOString();
+                    if (!dateMap.has(dateStr)) dateMap.set(dateStr, { sum: 0, count: 0 });
+                    if(d.RiskScore != null && !isNaN(d.RiskScore)) {
+                        const entry = dateMap.get(dateStr);
+                        entry.sum += d.RiskScore;
+                        entry.count++;
+                    }
+                });
+                chartData = Array.from(dateMap.entries()).map(([date, {sum, count}]) => ({
+                    x: new Date(date),
+                    y: count > 0 ? sum / count : null
+                })).sort((a,b) => a.x - b.x);
+
+            } else {
+                chartData = data.map(d => ({ x: d.Date, y: d.RiskScore }));
+            }
+            
+            if (chartData.length > 1) {
+                const startY = chartData[0]?.y || 0;
+                const endY = chartData[chartData.length-1]?.y || 0;
+                trendColor = endY > startY ? (isLowerBetter ? '#f87171' : '#34d399') : (isLowerBetter ? '#34d399' : '#f87171');
+            } else {
+                trendColor = isLowerBetter ? '#34d399' : '#f87171'; // Default
+            }
+
+            riskSparklineChart = new Chart(riskSparklineCanvas, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Risk Score',
+                        data: chartData,
+                        borderColor: trendColor,
+                        borderWidth: 2.5,
+                        fill: true,
+                        backgroundColor: `${trendColor}33`,
+                        tension: 0.4,
+                        pointRadius: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false, displayColors: false } },
+                    scales: {
+                        x: { type: 'time', display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+        }
+
         function showMetricChart(metricName, facilities) {
             chartModalTitle.textContent = `${metricName} Trend`;
             if (modalChart) modalChart.destroy();
@@ -793,57 +1144,71 @@
                  datasets = facilities.map((facility, index) => {
                      const facilityData = currentFilteredData.filter(d => d.Facility === facility);
                      const dataMap = new Map(facilityData.map(d => [d.Date, d[metricName]]));
-                     const chartData = allDates.map(date => dataMap.get(date) || null);
+                     const chartData = allDates.map(date => {
+                         const val = dataMap.get(date);
+                         return (val != null && !isNaN(val)) ? val : null;
+                     });
 
                      return {
                          label: facility, data: chartData,
                          borderColor: comparisonColors[index % comparisonColors.length],
                          backgroundColor: comparisonColors[index % comparisonColors.length] + '33',
                          fill: false, tension: 0.3, borderWidth: 2,
+                         spanGaps: true, // Connect lines over null data
                      };
                  });
 
             } else {
                 const singleFacilityData = currentFilteredData;
                  if (metricName === 'OBSL') {
-                    chartModalTitle.textContent = `OBSL Performance Trend`;
-                    datasets = [
-                        { label: 'OBSL FTL', data: singleFacilityData.map(d => d['OBSL FTL']), borderColor: '#818cf8', backgroundColor: '#818cf833', fill: true, tension: 0.3, borderWidth: 2 },
-                        { label: 'OBSL Carting', data: singleFacilityData.map(d => d['OBSL Carting']), borderColor: '#34d399', backgroundColor: '#34d39933', fill: true, tension: 0.3, borderWidth: 2 }
-                    ];
-                    tooltipCallbacks = { label: function(context) { 
-                        const label = context.dataset.label || '';
-                        const value = context.parsed.y;
-                        const dayData = singleFacilityData[context.dataIndex];
-                        let failureCount = 0;
-                        if (dayData) {
-                            if (label === 'OBSL FTL') failureCount = dayData['FTL Failed Trip'];
-                            if (label === 'OBSL Carting') failureCount = dayData['Carting Failed Trip'];
-                        }
-                        return `${label}: ${value.toFixed(2)}% (Failures: ${failureCount || 0})`;
-                     } };
-                } else if (metricName === 'MixBag Fail%') {
-                    datasets = [{ label: metricName, data: singleFacilityData.map(d => d[metricName]), borderColor: '#fb923c', backgroundColor: '#fb923c33', fill: true, tension: 0.3, borderWidth: 2 }];
-                    tooltipCallbacks = {
-                        label: function(context) {
-                            const value = context.parsed.y;
-                            const dayData = singleFacilityData[context.dataIndex];
-                            const failureCount = dayData ? dayData['MixFailed'] : 0;
-                            return `Fail %: ${value.toFixed(2)}% (Failed Bags: ${failureCount || 0})`;
-                        }
-                    };
-                } else {
-                    const isPercentage = metricName.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metricName) ;
-                    datasets = [{ label: metricName, data: singleFacilityData.map(d => d[metricName]), borderColor: '#60a5fa', backgroundColor: '#60a5fa33', fill: true, tension: 0.3, borderWidth: 2 }];
-                    tooltipCallbacks = { label: function(context) { return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}${isPercentage ? '%' : ''}`; }};
-                }
+                     chartModalTitle.textContent = `OBSL Performance Trend`;
+                     datasets = [
+                         { label: 'OBSL FTL', data: singleFacilityData.map(d => d['OBSL FTL']), borderColor: '#818cf8', backgroundColor: '#818cf833', fill: true, tension: 0.3, borderWidth: 2 },
+                         { label: 'OBSL Carting', data: singleFacilityData.map(d => d['OBSL Carting']), borderColor: '#34d399', backgroundColor: '#34d39933', fill: true, tension: 0.3, borderWidth: 2 }
+                     ];
+                     tooltipCallbacks = { label: function(context) { 
+                         const label = context.dataset.label || '';
+                         const value = context.parsed.y;
+                         const dayData = singleFacilityData[context.dataIndex];
+                         let failureCount = 0;
+                         if (dayData) {
+                             if (label === 'OBSL FTL') failureCount = dayData['FTL Failed Trip'];
+                             if (label === 'OBSL Carting') failureCount = dayData['Carting Failed Trip'];
+                         }
+                         return `${label}: ${value.toFixed(2)}% (Failures: ${failureCount || 0})`;
+                      } };
+                 } else if (metricName === 'MixBag Fail%') {
+                     datasets = [{ label: metricName, data: singleFacilityData.map(d => d[metricName]), borderColor: '#fb923c', backgroundColor: '#fb923c33', fill: true, tension: 0.3, borderWidth: 2 }];
+                     tooltipCallbacks = {
+                         label: function(context) {
+                             const value = context.parsed.y;
+                             const dayData = singleFacilityData[context.dataIndex];
+                             const failureCount = dayData ? dayData['MixFailed'] : 0;
+                             return `Fail %: ${value.toFixed(2)}% (Failed Bags: ${failureCount || 0})`;
+                         }
+                     };
+                 } else {
+                     const isPercentage = metricName.includes('%') || ['OBSL', 'PUT%', 'P1 Comp% PickList', 'Reg Roster', 'Adhoc Roster%'].includes(metricName) ;
+                     datasets = [{ label: metricName, data: singleFacilityData.map(d => d[metricName]), borderColor: '#60a5fa', backgroundColor: '#60a5fa33', fill: true, tension: 0.3, borderWidth: 2 }];
+                     tooltipCallbacks = { label: function(context) { return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}${isPercentage ? '%' : ''}`; }};
+                 }
             }
 
             modalChart = new Chart(modalChartCanvas, {
                 type: 'line', data: { labels: allDates, datasets: datasets },
                 options: {
                     responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { display: true, position: 'top' }, tooltip: { enabled: true, backgroundColor: 'rgba(30, 41, 59, 0.9)', titleFont: { weight: 'bold' }, callbacks: tooltipCallbacks }},
+                    plugins: { 
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyle: 'rectRounded' } }, 
+                        tooltip: { 
+                            enabled: true, 
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)', 
+                            titleFont: { weight: 'bold' }, 
+                            callbacks: tooltipCallbacks,
+                            padding: 10,
+                            cornerRadius: 6
+                        }
+                    },
                     scales: { 
                         x: { 
                             type: 'time', 
@@ -853,13 +1218,14 @@
                                 callback: function(value, index, ticks) {
                                     const date = new Date(value);
                                     if (isNaN(date)) return '';
-                                    const line1 = new Intl.DateTimeFormat('en-GB', { month: 'short', day: '2-digit' }).format(date);
-                                    const line2 = new Intl.DateTimeFormat('en-GB', { weekday: 'short' }).format(date);
-                                    return [line1, line2];
+                                    return [
+                                        new Intl.DateTimeFormat('en-GB', { month: 'short', day: '2-digit' }).format(date),
+                                        new Intl.DateTimeFormat('en-GB', { weekday: 'short' }).format(date)
+                                    ];
                                 }
                             }
                         }, 
-                        y: { beginAtZero: true, grid: { color: '#334155' } }
+                        y: { beginAtZero: true, grid: { color: 'rgba(199, 210, 254, 0.15)' } }
                     }
                 }
             });
@@ -869,8 +1235,8 @@
             
             chartInsightArea.innerHTML = `
                 <div id="insight-summary">${summary}</div>
-                <div id="insight-detailed" class="hidden">${detailed}</div>
-                ${detailed ? `<button id="generate-detailed-btn" class="mt-2 text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1">
+                <div id="insight-detailed" class="hidden mt-4">${detailed}</div>
+                ${detailed ? `<button id="generate-detailed-btn" class="mt-3 text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1">
                     <i data-lucide="activity" class="w-4 h-4"></i>
                     Show Detailed Analysis
                 </button>` : ''}
@@ -887,22 +1253,19 @@
             }
         }
         
-        // --- Modal & Table Functions ---
-        function showDataTableModal() {
-            const subtitle = document.getElementById('data-table-modal-subtitle');
+        // === Modal & Table Functions ===
+        
+        function renderDataExplorer() {
             if(selectedFacilities.length > 1) {
                 dataTableFacilitySelectorContainer.classList.remove('hidden');
                 dataTableFacilitySelector.innerHTML = selectedFacilities.map(f => `<option value="${f}">${f}</option>`).join('');
                 renderPivotTable(selectedFacilities[0]);
-                subtitle.textContent = `Displaying data for the selected period. Use dropdown to switch facility.`;
+                dataTableModalSubtitle.textContent = `Displaying data for the selected period. Use dropdown to switch facility.`;
             } else {
                 dataTableFacilitySelectorContainer.classList.add('hidden');
                 renderPivotTable(selectedFacilities[0]);
-                subtitle.textContent = `Displaying data for ${selectedFacilities[0]}.`;
+                dataTableModalSubtitle.textContent = `Displaying data for ${selectedFacilities[0]}.`;
             }
-
-            dataTableModal.classList.remove('hidden');
-            setTimeout(() => { dataTableModal.classList.add('opacity-100'); dataTableModal.querySelector('.glass-card').classList.remove('scale-95'); }, 10);
         }
 
         function renderPivotTable(facilityName) {
@@ -913,16 +1276,19 @@
             }
 
             const dates = [...new Set(facilityData.map(d => d.Date))].sort((a,b) => a - b);
-            const metrics = Object.keys(facilityData[0]).filter(key => key !== 'Facility' && key !== 'Date');
+            // Filter out internal/unexpected keys
+            const metrics = Object.keys(facilityData[0]).filter(key => 
+                key !== 'Facility' && key !== 'Date' && typeof facilityData[0][key] !== 'object'
+            );
             
             const dataMap = new Map();
             facilityData.forEach(row => { dataMap.set(row.Date.toISOString().split('T')[0], row); });
             
             const theadHTML = `<thead><tr><th>Metric</th>${dates.map(date => {
                 if (isNaN(date)) return `<th>Invalid Date</th>`;
-                const formattedDate = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
-                const dayOfWeek = new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(date);
-                return `<th><div>${formattedDate}</div><div class="text-xs font-normal text-slate-400">${dayOfWeek}</div></th>`;
+                const formattedDate = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' }).format(date);
+                const dayOfWeek = new Intl.DateTimeFormat('en-GB', { weekday: 'short' }).format(date);
+                return `<th><div>${formattedDate}</div><div class="text-xs font-normal text-slate-500">${dayOfWeek}</div></th>`;
             }).join('')}</tr></thead>`;
             
             const tbodyHTML = `<tbody>${metrics.map(metric => {
@@ -944,7 +1310,7 @@
                                 let colorClass = ''; let icon = '';
                                 if (change > 0) { colorClass = isLowerBetter ? 'text-red-400' : 'text-emerald-400'; icon = 'trending-up'; } 
                                 else { colorClass = isLowerBetter ? 'text-emerald-400' : 'text-red-400'; icon = 'trending-down'; }
-                                trendHTML = `<span class="ml-2 text-xs flex items-center ${colorClass}"><i data-lucide="${icon}" class="w-3 h-3"></i></span>`;
+                                trendHTML = `<span class="ml-2 text-xs flex items-center ${colorClass}"><i data-lucide="${icon}" class="w-3.5 h-3.5"></i></span>`;
                             }
                         }
                     }
@@ -965,12 +1331,6 @@
             lucide.createIcons();
         }
 
-        function hideDataTableModal() {
-            dataTableModal.classList.remove('opacity-100');
-            dataTableModal.querySelector('.glass-card').classList.add('scale-95');
-            setTimeout(() => { dataTableModal.classList.add('hidden'); }, 300);
-        }
-
         function showChartModal() {
             chartModal.classList.remove('hidden');
             setTimeout(() => { chartModal.classList.add('opacity-100'); chartModal.querySelector('.glass-card').classList.remove('scale-95'); }, 10);
@@ -978,19 +1338,23 @@
         function hideChartModal() {
             chartModal.classList.remove('opacity-100');
             chartModal.querySelector('.glass-card').classList.add('scale-95');
-            setTimeout(() => { chartModal.classList.add('hidden'); }, 300);
+            setTimeout(() => { chartModal.classList.add('hidden'); if (modalChart) { modalChart.destroy(); } }, 300);
         }
 
         function populateFacilityModal() {
-             facilityListContainer.innerHTML = sortedFacilities.map(f => `
-                <label for="facility-${f.name}" class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800/50 cursor-pointer">
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" id="facility-${f.name}" value="${f.name}" class="custom-checkbox">
-                        <span class="text-slate-200">${f.name}</span>
-                    </div>
-                    <span class="text-sm font-mono px-2 py-1 rounded-md bg-slate-700 text-amber-400">${f.avgRisk.toFixed(2)}</span>
-                </label>
-            `).join('');
+             facilityListContainer.innerHTML = sortedFacilities.map(f => {
+                const riskColor = f.avgRisk > 1.5 ? 'text-red-400' : (f.avgRisk > 0.8 ? 'text-amber-400' : 'text-emerald-400');
+                const riskBg = f.avgRisk > 1.5 ? 'bg-red-900/50' : (f.avgRisk > 0.8 ? 'bg-amber-900/50' : 'bg-emerald-900/50');
+
+                return `
+                 <label for="facility-${f.name}" class="flex items-center justify-between p-3 rounded-lg hover:bg-indigo-900/50 cursor-pointer transition-colors">
+                     <div class="flex items-center gap-3">
+                         <input type="checkbox" id="facility-${f.name}" value="${f.name}" class="custom-checkbox">
+                         <span class="text-slate-200 font-medium">${f.name}</span>
+                     </div>
+                     <span class="text-sm font-mono px-2 py-1 rounded-md ${riskBg} ${riskColor}">${f.avgRisk.toFixed(2)}</span>
+                 </label>
+             `}).join('');
         }
 
         function showFacilityModal() {
@@ -1011,4 +1375,5 @@
     </script>
 </body>
 </html>
+
 
